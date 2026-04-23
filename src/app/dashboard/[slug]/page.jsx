@@ -102,6 +102,31 @@ function KpiCard({ icon, value, label, sub, accent, bg, trend, delay = 0 }) {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────
 
+
+// ── Mobile Tab Bar ─────────────────────────────────────────────────────────
+function MobileTabBar({ activeTab, setActiveTab, hotCount }) {
+  const tabs = [
+    { id: "overview",     icon: "📊", label: "Overview" },
+    { id: "leads",        icon: "👥", label: "Leads", badge: hotCount > 0 ? hotCount : null },
+    { id: "appointments", icon: "📅", label: "Appts" },
+  ];
+  return (
+    <div className="mobile-tab-bar">
+      <div className="mobile-tab-bar-inner">
+        {tabs.map((t) => (
+          <button key={t.id}
+            className={"mobile-tab-btn" + (activeTab === t.id ? " active" : "")}
+            onClick={() => setActiveTab(t.id)}
+          >
+            {t.icon} {t.label}
+            {t.badge ? <span className="mobile-tab-badge">{t.badge}</span> : null}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage({ params }) {
   const { slug } = params;
   const router   = useRouter();
@@ -229,6 +254,10 @@ export default function DashboardPage({ params }) {
 
       {/* ─── Main ────────────────────────────────────────────────── */}
       <main className="main-content">
+
+        {/* Mobile tab bar — hidden on desktop via CSS */}
+        <MobileTabBar activeTab={activeTab} setActiveTab={setActiveTab} hotCount={hotCount} />
+
         <div className="page-header">
           <div className="page-title-block">
             <div className="page-eyebrow">Live dashboard</div>
@@ -402,6 +431,7 @@ export default function DashboardPage({ params }) {
               </div>
             </div>
             <div className="table-wrap">
+              <div className="table-scroll">
               {loading ? Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton skeleton-row" />) :
                 visibleLeads.length === 0 ? (
                   <div className="empty-state">
