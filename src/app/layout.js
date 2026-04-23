@@ -1,10 +1,8 @@
 import "@/styles/globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 
 export const metadata = {
   title: "Vision Infinity — Client Dashboard",
-  description: "AI-powered lead and business intelligence dashboard by Vision Infinity",
+  description: "AI-powered lead dashboard by Vision Infinity",
 };
 
 export default function RootLayout({ children }) {
@@ -19,13 +17,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>
-        <Header />
-        <div className="vi-page-body">
-          {children}
-        </div>
-        <Footer />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
