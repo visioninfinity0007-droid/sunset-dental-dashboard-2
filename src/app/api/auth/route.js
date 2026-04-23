@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { findClientByCredentials } from "@/lib/clients";
-import { getSupabaseAdmin } from "@/lib/supabase-browser";
 
 const SESSION_COOKIE = "vi_session";
-const EMAIL_COOKIE   = "vi_email";   // non-httpOnly, readable by client for display
-const SESSION_TTL    = 60 * 60 * 8; // 8 hours
+const EMAIL_COOKIE   = "vi_email";
+const SESSION_TTL    = 60 * 60 * 8;
 
 function makeSessionValue(slug, email) {
   const payload = { s: slug, e: email, x: Math.floor(Date.now() / 1000) + SESSION_TTL };
@@ -14,32 +13,17 @@ function makeSessionValue(slug, email) {
 export async function POST(request) {
   const body = await request.json().catch(() => ({}));
   const { email, password } = body;
-
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
   }
-
-  // ── Demo / per-client password auth ──────────────────────────────────────
   const match = findClientByCredentials(email, password);
   if (match) {
     const { slug } = match;
     const res = NextResponse.json({ ok: true, slug });
-
-    res.cookies.set(SESSION_COOKIE, makeSessionValue(slug, email), {
-      httpOnly: true,
-      path:     "/",
-      maxAge:   SESSION_TTL,
-      sameSite: "lax",
-    });
-    res.cookies.set(EMAIL_COOKIE, email, {
-      httpOnly: false,
-      path:     "/",
-      maxAge:   SESSION_TTL,
-      sameSite: "lax",
-    });
+    res.cookies.set(SESSION_COOKIE, makeSessionValue(slug, email), { httpOnly: true, path: "/", maxAge: SESSION_TTL, sameSite: "lax" });
+    res.cookies.set(EMAIL_COOKIE, email, { httpOnly: false, path: "/", maxAge: SESSION_TTL, sameSite: "lax" });
     return res;
   }
-
   return NextResponse.json({ error: "Incorrect email or password." }, { status: 401 });
 }
 
