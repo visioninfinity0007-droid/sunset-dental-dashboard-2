@@ -1,20 +1,21 @@
-# Deployment Guide
+# Deployment Guide (Coolify)
 
-The Vision Infinity dashboard is a Next.js 14 application powered by Supabase and Evolution API v2.
+The Vision Infinity dashboard is a Next.js 14 application powered by Supabase and Evolution API v2, designed for deployment on Coolify.
 
 ## Prerequisites
-1. **Supabase Project**: Create a new project on Supabase.
-2. **Evolution API v2 Instance**: Set up and run the Evolution API v2.
-3. **n8n Instance**: For webhook processing and bot logic.
-4. **Vercel Account**: Or any environment supporting Next.js 14.
+1. **Supabase Project**: Set up a Supabase instance for database and auth.
+2. **Evolution API v2 Instance**: For WhatsApp integration.
+3. **Coolify Server**: A self-hosted Coolify instance.
 
-## Supabase Setup
-1. Execute the migration file `supabase/migrations/00001_init.sql` in the Supabase SQL editor to create the schema and RLS policies.
-2. Create a storage bucket named `knowledge` and make it public (or set appropriate RLS).
-3. Get your API Keys from Settings > API.
+## Coolify Setup
+1. Create a new **Application** in Coolify.
+2. Select **GitHub** as the provider and choose the `vision-infinity-app` repository.
+3. Choose the **Nixpacks** or **Dockerfile** build pack. We recommend the included **Dockerfile** for Next.js standalone output.
+4. Set the **Start Command** to `node server.js` (handled by Dockerfile).
+5. Add the necessary Environment Variables.
 
-## Environment Setup
-Copy `.env.example` to `.env.local` and fill in the values:
+## Environment Variables
+In the Coolify dashboard, add the following variables under the **Environment Variables** tab:
 ```env
 NEXT_PUBLIC_APP_URL="https://your-domain.com"
 NEXT_PUBLIC_SUPABASE_URL="https://xxxx.supabase.co"
@@ -25,17 +26,16 @@ EVOLUTION_API_KEY="your-apikey"
 N8N_WEBHOOK_BASE="https://n8n.yourdomain.com/webhook"
 ```
 
-## Running Locally
-```bash
-npm install
-npm run dev
-```
+## Health Checks
+The application exposes a health check endpoint at `/api/health`.
+In Coolify, configure the Health Check settings:
+- **Path**: `/api/health`
+- **Method**: `GET`
+- **Expected Status**: `200`
 
-## Deploying to Vercel
-1. Push the repository to GitHub.
-2. Import the project in Vercel.
-3. Add the environment variables from your `.env.local`.
-4. Deploy.
+## Build Settings
+The repository includes `output: "standalone"` in `next.config.js` and a multi-stage Dockerfile tailored for Next.js.
+When using the Dockerfile pack in Coolify, no further configuration is required.
 
 ## Production Considerations
 - Ensure `SUPABASE_SERVICE_ROLE_KEY` is kept secure and never exposed to the client.
