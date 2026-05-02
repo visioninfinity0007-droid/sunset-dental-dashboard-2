@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabaseServer";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AdminSidebar from "./AdminSidebar";
+// v2 - added debug logging
 
 export default async function AdminLayout({ children }) {
   const cookieStore = cookies();
