@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function TenantsPage() {
   const [tenants, setTenants] = useState([]);
@@ -138,6 +139,12 @@ export default function TenantsPage() {
                         >
                           Impersonate
                         </button>
+                        <Link 
+                          href={`/admin/tenants/${t.id}`}
+                          className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                        >
+                          View
+                        </Link>
                       </div>
                     </td>
                   </tr>

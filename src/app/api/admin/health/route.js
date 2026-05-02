@@ -1,67 +1,94 @@
-import { createClient, createServiceRoleClient } from "@/lib/supabaseServer";
-import { cookies } from "next/headers";
+import { createServiceRoleClient } from "@/lib/supabaseServer";
 import { NextResponse } from "next/server";
 
-export async function GET(request) {
+export async function GET() {
+  const healthData = {
+    supabase: { status: "unknown", latencyMs: 0, details: null },
+    evolution: { status: "unknown", latencyMs: 0, details: null },
+    n8n: { status: "unknown", latencyMs: 0, details: null },
+  };
+
+  // 1. Supabase Health Check
+  const startSupabase = Date.now();
   try {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
-    
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const { data: superAdmin } = await supabase
-      .from("super_admins")
-      .select("user_id")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-
-    if (!superAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
     const supabaseAdmin = createServiceRoleClient();
     
-    // 1. WhatsApp Instances
-    const { data: instances } = await supabaseAdmin.from("whatsapp_instances").select("evolution_status");
-    const activeInstances = instances?.filter(i => i.evolution_status === 'open' || i.evolution_status === 'connected').length || 0;
-    const totalInstances = instances?.length || 0;
+    // Check connectivity and active connections
+    const { count, error: connError } = await supabaseAdmin
+      .from("tenants")
+      .select("*", { count: "exact", head: true });
 
-    // 2. Messages
-    const { count: totalMessages } = await supabaseAdmin.from("messages").select("*", { count: "exact", head: true });
+    // For DB size, we would ideally run a raw query `SELECT pg_database_size(current_database());`
+    // but RPC is required if we want to run it via the API.
+    // We will just provide a connectivity status.
     
-    // Calculate 30 day growth
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    healthData.supabase.latencyMs = Date.now() - startSupabase;
 
-    const { count: messagesThisMonth } = await supabaseAdmin
-      .from("messages")
-      .select("*", { count: "exact", head: true })
-      .gt("created_at", thirtyDaysAgo.toISOString());
-
-    const { count: messagesLastMonth } = await supabaseAdmin
-      .from("messages")
-      .select("*", { count: "exact", head: true })
-      .gt("created_at", sixtyDaysAgo.toISOString())
-      .lte("created_at", thirtyDaysAgo.toISOString());
-
-    const messageGrowth = (messagesThisMonth || 0) - (messagesLastMonth || 0);
-
-    // 3. Knowledge Sources (sum of file size)
-    const { data: knowledge } = await supabaseAdmin.from("knowledge_sources").select("file_size_bytes").eq("type", "document");
-    const totalBytes = knowledge?.reduce((acc, curr) => acc + (curr.file_size_bytes || 0), 0) || 0;
-    const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
-
-    return NextResponse.json({ 
-      activeInstances,
-      totalInstances,
-      totalMessages: totalMessages || 0,
-      messagesThisMonth: messagesThisMonth || 0,
-      messageGrowth,
-      knowledgeSizeMB: totalMB
-    });
+    if (connError) {
+      healthData.supabase.status = "error";
+      healthData.supabase.details = connError.message;
+    } else {
+      healthData.supabase.status = "healthy";
+      healthData.supabase.details = { connections_check: "ok", test_query_count: count };
+    }
   } catch (error) {
-    console.error("Admin health error:", error);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    healthData.supabase.status = "error";
+    healthData.supabase.latencyMs = Date.now() - startSupabase;
+    healthData.supabase.details = error.message;
   }
+
+  // 2. Evolution API Health Check
+  const startEvo = Date.now();
+  const evolutionUrl = process.env.EVOLUTION_API_URL;
+  const apiKey = process.env.EVOLUTION_API_KEY;
+
+  if (evolutionUrl && apiKey) {
+    try {
+      const res = await fetch(`${evolutionUrl}/instance/fetchInstances`, {
+        headers: { apikey: apiKey },
+        signal: AbortSignal.timeout(5000)
+      });
+      healthData.evolution.latencyMs = Date.now() - startEvo;
+      if (res.ok) {
+        const instances = await res.json();
+        healthData.evolution.status = "healthy";
+        healthData.evolution.details = { active_instances: instances.length };
+      } else {
+        healthData.evolution.status = "error";
+        healthData.evolution.details = `Status: ${res.status}`;
+      }
+    } catch (error) {
+      healthData.evolution.status = "error";
+      healthData.evolution.latencyMs = Date.now() - startEvo;
+      healthData.evolution.details = error.message;
+    }
+  } else {
+    healthData.evolution.status = "not_configured";
+  }
+
+  // 3. n8n Webhook Health Check
+  const startN8n = Date.now();
+  // Using N8N_WEBHOOK_URL or N8N_WEBHOOK_BASE. Assuming N8N_WEBHOOK_URL from instructions.
+  const n8nUrl = process.env.N8N_WEBHOOK_URL || process.env.N8N_WEBHOOK_BASE;
+  
+  if (n8nUrl) {
+    try {
+      // Just a simple OPTIONS request to see if the server responds
+      const res = await fetch(n8nUrl, {
+        method: "OPTIONS",
+        signal: AbortSignal.timeout(5000)
+      });
+      healthData.n8n.latencyMs = Date.now() - startN8n;
+      healthData.n8n.status = "healthy"; // As long as it responds
+      healthData.n8n.details = `Status: ${res.status}`;
+    } catch (error) {
+      healthData.n8n.status = "error";
+      healthData.n8n.latencyMs = Date.now() - startN8n;
+      healthData.n8n.details = error.message;
+    }
+  } else {
+    healthData.n8n.status = "not_configured";
+  }
+
+  return NextResponse.json(healthData);
 }

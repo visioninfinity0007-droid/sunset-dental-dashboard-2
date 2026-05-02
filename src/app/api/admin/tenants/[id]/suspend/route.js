@@ -19,23 +19,28 @@ export async function POST(request, { params }) {
 
     if (!superAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    // Set the impersonating cookie
-    cookies().set({
-      name: "vi_impersonating",
-      value: id,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      sameSite: "lax",
-      maxAge: 60 * 60, // 1 hour
-    });
-
     const supabaseAdmin = createServiceRoleClient();
+    
+    const { data: tenant } = await supabaseAdmin
+      .from("tenants")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (!tenant) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Update tenant status to suspended
+    await supabaseAdmin
+      .from("tenants")
+      .update({ plan_status: "suspended" })
+      .eq("id", id);
+
+    // Audit Log
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
     await supabaseAdmin.from("audit_log").insert({
       actor_user_id: session.user.id,
       actor_email: session.user.email,
-      action: "admin_impersonate_tenant",
+      action: "admin_suspend_tenant",
       target_type: "tenant",
       target_id: id,
       ip_address: ip
@@ -43,7 +48,7 @@ export async function POST(request, { params }) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Impersonate error:", error);
+    console.error("Admin suspend tenant error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
