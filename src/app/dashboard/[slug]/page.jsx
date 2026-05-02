@@ -1012,5 +1012,6 @@ export default function DashboardPage({ params }) {
         )}
       </main>
     </div>
+    </>
   );
 }
