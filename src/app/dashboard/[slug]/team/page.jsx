@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import DashboardShell from "@/components/DashboardShell";
 
 export default function TeamPage({ params }) {
   const { slug } = params;
@@ -62,28 +63,13 @@ export default function TeamPage({ params }) {
   };
 
   return (
-    <div className="dashboard-shell">
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-           <div className="sidebar-logo-mark">
-             <div className="logo-icon">👥</div>
-             <div className="logo-text">
-               <strong>Team</strong>
-             </div>
-           </div>
-        </div>
-        <nav className="sidebar-nav">
-          <button className="nav-link" onClick={() => router.push(`/dashboard/${slug}`)} type="button">
-            &larr; Back to Dashboard
-          </button>
-          <button className="nav-link active" type="button">
-            Manage Team
-          </button>
-        </nav>
-      </aside>
-
-      <main className="main-content">
-        <div className="page-header">
+    <DashboardShell
+      slug={slug}
+      activeTab="team"
+      userEmail=""
+      clientMeta={{}}
+    >
+      <div className="page-header">
           <div className="page-title-block">
             <h1 className="page-title">Team Members</h1>
             <p className="page-subtitle">Manage who has access to your workspace.</p>
@@ -205,7 +191,6 @@ export default function TeamPage({ params }) {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </DashboardShell>
   );
 }

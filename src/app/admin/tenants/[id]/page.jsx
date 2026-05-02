@@ -13,6 +13,8 @@ export default function TenantProfilePage({ params }) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [downloadingZip, setDownloadingZip] = useState(false);
+  const [editingGrace, setEditingGrace] = useState(false);
+  const [graceDays, setGraceDays] = useState(7);
 
   const supabase = createClient();
 
@@ -26,6 +28,9 @@ export default function TenantProfilePage({ params }) {
       if (res.ok) {
         const json = await res.json();
         setData(json);
+        if (json.tenant.suspension_grace_days !== undefined) {
+          setGraceDays(json.tenant.suspension_grace_days);
+        }
       } else {
         alert("Failed to load tenant data.");
         router.push("/admin/tenants");
@@ -73,6 +78,29 @@ export default function TenantProfilePage({ params }) {
     a.download = fileName;
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  const handleUpdateGrace = async () => {
+    setActionLoading("grace");
+    try {
+      const res = await fetch(`/api/admin/tenants/${id}/configure-grace`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ grace_days: graceDays })
+      });
+      if (res.ok) {
+        alert("Grace period updated successfully.");
+        setEditingGrace(false);
+        fetchTenantData();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update grace period");
+      }
+    } catch (err) {
+      alert("Error updating grace period");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleBulkExport = async () => {
@@ -160,6 +188,29 @@ export default function TenantProfilePage({ params }) {
             <hr className="border-gray-800 my-4" />
             <div className="flex justify-between"><span className="text-gray-500">Stripe Customer ID</span> <span className="font-mono text-xs">{tenant.stripe_customer_id || "N/A"}</span></div>
             <div className="flex justify-between"><span className="text-gray-500">Stripe Sub ID</span> <span className="font-mono text-xs">{tenant.stripe_subscription_id || "N/A"}</span></div>
+            <hr className="border-gray-800 my-4" />
+            <div className="flex justify-between items-center">
+              <span className="text-gray-500">Suspension Grace Period</span>
+              {editingGrace ? (
+                <div className="flex gap-2 items-center">
+                  <input 
+                    type="number" 
+                    value={graceDays} 
+                    onChange={(e) => setGraceDays(e.target.value)} 
+                    className="w-16 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-xs" 
+                    min="0"
+                  />
+                  <span className="text-gray-500">days</span>
+                  <button onClick={handleUpdateGrace} disabled={actionLoading === "grace"} className="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs ml-2 disabled:opacity-50">Save</button>
+                  <button onClick={() => { setEditingGrace(false); setGraceDays(tenant.suspension_grace_days || 7); }} className="text-gray-400 hover:text-white text-xs">Cancel</button>
+                </div>
+              ) : (
+                <div className="flex gap-2 items-center">
+                  <span>{tenant.suspension_grace_days ?? 7} days</span>
+                  <button onClick={() => setEditingGrace(true)} className="text-blue-400 hover:text-blue-300 text-xs ml-2">Edit</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

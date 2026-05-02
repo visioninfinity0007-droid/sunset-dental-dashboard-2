@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Papa from "papaparse";
+import DashboardShell from "@/components/DashboardShell";
 import {
   AreaChart,
   Area,
@@ -356,68 +357,14 @@ export default function DashboardPage({ params }) {
         </div>
       )}
       {getBanner()}
-      <div className="dashboard-shell">
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-          <div className="sidebar-logo-mark">
-            <div className="logo-icon">{clientLogo}</div>
-            <div className="logo-text">
-              <strong>{clientName}</strong>
-              <span>{clientTagline}</span>
-            </div>
-          </div>
-        </div>
-
-        <nav className="sidebar-nav" aria-label="Dashboard navigation">
-          <span className="nav-section-label">Dashboard</span>
-          {[
-            { id: "overview", icon: "📊", label: "Overview" },
-            { id: "leads", icon: "👥", label: "Leads", badge: hotCount > 0 ? hotCount : null },
-            { id: "appointments", icon: "📅", label: "Appointments" },
-          ].map((item) => (
-            <button
-              key={item.id}
-              className={`nav-link${activeTab === item.id ? " active" : ""}`}
-              onClick={() => setActiveTab(item.id)}
-              aria-current={activeTab === item.id ? "page" : undefined}
-              type="button"
-            >
-              <span className="nav-icon">{item.icon}</span>
-              {item.label}
-              {item.badge ? <span className="nav-badge">{item.badge}</span> : null}
-            </button>
-          ))}
-
-          <span className="nav-section-label" style={{ marginTop: 8 }}>
-            Reports
-          </span>
-
-          <button className="nav-link" onClick={() => setActiveTab("overview")} type="button">
-            <span className="nav-icon">📈</span>
-            Trend Analysis
-          </button>
-
-          <button className="nav-link" onClick={() => setActiveTab("leads")} type="button">
-            <span className="nav-icon">🔥</span>
-            Hot Leads
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="sidebar-user">
-            <div className="user-avatar">{userEmail ? userEmail[0].toUpperCase() : "U"}</div>
-            <div className="user-info">
-              <strong>{userEmail || "Client"}</strong>
-              <span>{clientName}</span>
-            </div>
-            <button className="logout-btn" onClick={handleLogout} title="Sign out" type="button">
-              ↗
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      <main className="main-content">
+      <DashboardShell
+        slug={slug}
+        clientMeta={clientMeta}
+        userEmail={userEmail}
+        hotCount={hotCount}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      >
         <MobileTabBar activeTab={activeTab} setActiveTab={setActiveTab} hotCount={hotCount} />
 
         <div className="page-header">
@@ -1010,8 +957,7 @@ export default function DashboardPage({ params }) {
             )}
           </div>
         )}
-      </main>
-    </div>
+      </DashboardShell>
     </>
   );
 }

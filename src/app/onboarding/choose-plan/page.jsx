@@ -184,7 +184,8 @@ function PlanPicker() {
                   type="checkbox"
                   checked={agreedTerms}
                   onChange={(e) => setAgreedTerms(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-[#1E5FFF] focus:ring-[#1E5FFF] focus:ring-offset-gray-900"
+                  disabled={loading}
+                  className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-[#1E5FFF] focus:ring-[#1E5FFF] focus:ring-offset-gray-900 disabled:opacity-50"
                 />
               </div>
               <div className="ml-3 text-sm">
@@ -199,7 +200,8 @@ function PlanPicker() {
                   type="checkbox"
                   checked={agreedPrivacy}
                   onChange={(e) => setAgreedPrivacy(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-[#1E5FFF] focus:ring-[#1E5FFF] focus:ring-offset-gray-900"
+                  disabled={loading}
+                  className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-[#1E5FFF] focus:ring-[#1E5FFF] focus:ring-offset-gray-900 disabled:opacity-50"
                 />
               </div>
               <div className="ml-3 text-sm">
@@ -214,7 +216,8 @@ function PlanPicker() {
                   type="checkbox"
                   checked={agreedDPA}
                   onChange={(e) => setAgreedDPA(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-[#1E5FFF] focus:ring-[#1E5FFF] focus:ring-offset-gray-900"
+                  disabled={loading}
+                  className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-[#1E5FFF] focus:ring-[#1E5FFF] focus:ring-offset-gray-900 disabled:opacity-50"
                 />
               </div>
               <div className="ml-3 text-sm">
@@ -230,9 +233,17 @@ function PlanPicker() {
             <button
               onClick={handleSelectPlan}
               disabled={!canSubmit || loading}
-              className="w-full py-4 rounded-xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-[#1E5FFF] hover:bg-blue-600 text-white shadow-[0_0_20px_rgba(30,95,255,0.3)]"
+              className="w-full flex justify-center items-center gap-2 py-4 rounded-xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-[#1E5FFF] hover:bg-blue-600 text-white shadow-[0_0_20px_rgba(30,95,255,0.3)]"
             >
-              {loading ? "Processing..." : `Continue with ${plans.find(p => p.id === selectedPlan)?.name || "Plan"}`}
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : `Continue with ${plans.find(p => p.id === selectedPlan)?.name || "Plan"}`}
             </button>
             <div className="mt-4">
               <Link href={`/dashboard/${slug}`} className="text-sm text-gray-500 hover:text-gray-300 hover:underline">

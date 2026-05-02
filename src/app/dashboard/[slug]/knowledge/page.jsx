@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import DashboardShell from "@/components/DashboardShell";
 
 export default function KnowledgePage({ params }) {
   const { slug } = params;
@@ -116,29 +117,13 @@ export default function KnowledgePage({ params }) {
   });
 
   return (
-    <div className="dashboard-shell">
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-           <div className="sidebar-logo-mark">
-             <div className="logo-icon">🧠</div>
-             <div className="logo-text">
-               <strong>Knowledge</strong>
-             </div>
-           </div>
-        </div>
-        <nav className="sidebar-nav">
-          <button className="nav-link" onClick={() => router.push(`/dashboard/${slug}`)}>
-            &larr; Back to Dashboard
-          </button>
-          <button className={`nav-link ${activeTab === 'flows' ? 'active' : ''}`} onClick={() => setActiveTab("flows")}>Chat Flows</button>
-          <button className={`nav-link ${activeTab === 'faqs' ? 'active' : ''}`} onClick={() => setActiveTab("faqs")}>FAQs</button>
-          <button className={`nav-link ${activeTab === 'docs' ? 'active' : ''}`} onClick={() => setActiveTab("docs")}>Documents</button>
-          <button className={`nav-link ${activeTab === 'website' ? 'active' : ''}`} onClick={() => setActiveTab("website")}>Website Links</button>
-        </nav>
-      </aside>
-
-      <main className="main-content">
-        <div className="page-header">
+    <DashboardShell
+      slug={slug}
+      activeTab="knowledge"
+      userEmail=""
+      clientMeta={{}}
+    >
+      <div className="page-header">
           <div className="page-title-block">
             <h1 className="page-title capitalize">{activeTab.replace("docs", "documents")}</h1>
             <p className="page-subtitle">Train your AI assistant with custom knowledge.</p>
@@ -160,6 +145,15 @@ export default function KnowledgePage({ params }) {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="px-8 border-b border-gray-800 mb-6">
+          <nav className="-mb-px flex space-x-8">
+            <button className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'flows' ? 'border-[#1E5FFF] text-[#1E5FFF]' : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-300'}`} onClick={() => setActiveTab("flows")}>Chat Flows</button>
+            <button className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'faqs' ? 'border-[#1E5FFF] text-[#1E5FFF]' : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-300'}`} onClick={() => setActiveTab("faqs")}>FAQs</button>
+            <button className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'docs' ? 'border-[#1E5FFF] text-[#1E5FFF]' : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-300'}`} onClick={() => setActiveTab("docs")}>Documents</button>
+            <button className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'website' ? 'border-[#1E5FFF] text-[#1E5FFF]' : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-300'}`} onClick={() => setActiveTab("website")}>Website Links</button>
+          </nav>
         </div>
 
         <div className="px-8 pb-10">
@@ -246,7 +240,6 @@ export default function KnowledgePage({ params }) {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </DashboardShell>
   );
 }
