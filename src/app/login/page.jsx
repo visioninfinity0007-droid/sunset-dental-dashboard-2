@@ -66,9 +66,11 @@ function LoginForm() {
     }
 
     const nextPath = searchParams.get("next");
-    router.replace(nextPath && nextPath.startsWith(`/dashboard/${slug}`)
-      ? nextPath
-      : `/dashboard/${slug}`);
+    if (nextPath && (nextPath.startsWith("/admin") || nextPath.startsWith(`/dashboard/${slug}`))) {
+      router.replace(nextPath);
+    } else {
+      router.replace(`/dashboard/${slug}`);
+    }
   }
 
   return (
