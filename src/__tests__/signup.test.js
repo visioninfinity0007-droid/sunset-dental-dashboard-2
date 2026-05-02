@@ -19,7 +19,10 @@ const chainable = {
   delete: mockDelete,
   eq: vi.fn().mockReturnThis(),
   is: vi.fn().mockReturnThis(),
+  order: vi.fn().mockReturnThis(),
+  limit: vi.fn().mockReturnThis(),
   single: mockSingle,
+  maybeSingle: mockSingle,
   then: function(resolve) { resolve({ error: null }); }
 };
 
@@ -49,7 +52,6 @@ vi.mock("@/lib/supabaseServer", () => ({
 describe("Signup POST Route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn(); // Mock Evolution API fetch
   });
 
   const createRequest = (body) => ({
@@ -70,12 +72,10 @@ describe("Signup POST Route", () => {
     mockSingle.mockResolvedValueOnce({ data: null, error: null }); // Tenant slug not found -> unique
     // For insert tenant
     mockSingle.mockResolvedValueOnce({ data: { id: "tenant-123", slug: "acme-corp" }, error: null });
-    // For evolution instance
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ instance: { token: "evo-token" } }),
-    });
     
+    // Mock Healthcheck
+    mockSingle.mockResolvedValueOnce({ data: { joined_at: "2026", tenants: { slug: "acme-corp" } }, error: null });
+
     mockSignInWithPassword.mockResolvedValueOnce({ data: {}, error: null });
 
     const req = createRequest({
@@ -92,7 +92,6 @@ describe("Signup POST Route", () => {
     expect(data.ok).toBe(true);
     expect(data.slug).toBe("acme-corp");
     expect(mockCreateUser).toHaveBeenCalledWith(expect.objectContaining({ email: "john@acme.com" }));
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/instance/create"), expect.any(Object));
   });
 
   it("rolls back auth user if tenant creation fails", async () => {
@@ -125,7 +124,8 @@ describe("Signup POST Route", () => {
     // For insert tenant
     mockSingle.mockResolvedValueOnce({ data: { id: "tenant-123", slug: "acme-corp" }, error: null });
     
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ instance: { token: "evo" } }) });
+    // Mock Healthcheck
+    mockSingle.mockResolvedValueOnce({ data: { joined_at: "2026", tenants: { slug: "acme-corp" } }, error: null });
 
     const req = createRequest({
       businessName: "Acme Corp",
@@ -142,26 +142,4 @@ describe("Signup POST Route", () => {
     expect(mockDeleteUser).not.toHaveBeenCalled(); // Successful run, no rollback
   });
 
-  it("rolls back tenant and user if WhatsApp Evolution fails", async () => {
-    mockCreateUser.mockResolvedValueOnce({ data: { user: { id: "user-123" } }, error: null });
-    mockSingle.mockResolvedValueOnce({ data: null, error: null }); // slug unique
-    mockSingle.mockResolvedValueOnce({ data: { id: "tenant-123", slug: "acme-corp" }, error: null });
-    
-    // Evolution API fetch fails
-    global.fetch.mockResolvedValueOnce({ ok: false, statusText: "Unauthorized" });
-
-    const req = createRequest({
-      businessName: "Acme Corp",
-      fullName: "John Doe",
-      email: "john@acme.com",
-      password: "password123"
-    });
-
-    const res = await POST(req);
-    const data = await res.json();
-    
-    expect(res.status).toBe(500);
-    expect(mockDelete).toHaveBeenCalled(); // Deletes tenant
-    expect(mockDeleteUser).toHaveBeenCalledWith("user-123");
-  });
 });

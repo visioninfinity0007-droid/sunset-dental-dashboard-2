@@ -1,12 +1,12 @@
-const LOGO_URL = "https://visioninfinity.co/wp-content/uploads/2026/04/Untitled-design-8-1.png";
- 
+import Logo from "./Logo";
+
 export default function Footer() {
   return (
     <footer className="vi-footer">
       <div className="vi-footer-inner">
  
         <div className="vi-footer-brand">
-          <img src={LOGO_URL} alt="Vision Infinity" className="vi-footer-logo" />
+          <Logo size={36} withText={false} />
           <p className="vi-footer-desc">
             AI-powered WhatsApp automation for businesses across Pakistan.
           </p>

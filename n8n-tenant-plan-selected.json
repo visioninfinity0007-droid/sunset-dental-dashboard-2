@@ -1,0 +1,55 @@
+{
+  "name": "Vision Infinity - Tenant Plan Selected",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tenant-plan-selected",
+        "options": {}
+      },
+      "id": "e1f13b96-b072-46ed-8ba2-fb14c4078de3",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "tenant-plan-selected"
+    },
+    {
+      "parameters": {
+        "fromEmail": "hello@visioninfinity.co",
+        "toEmail": "={{ $json.body.owner_email }}",
+        "subject": "=Welcome to Vision Infinity - Invoice for {{ $json.body.plan }} plan",
+        "text": "=Hi {{ $json.body.owner_name }},\n\nThank you for choosing Vision Infinity!\n\nYou've selected the {{ $json.body.plan }} plan for your business ({{ $json.body.business_name }}).\n\nYour invoice is attached. Please pay Rs. {{ $json.body.total_pkr }} by {{ $json.body.due_date }}.\n\nYou can also download your invoice here: {{ $json.body.invoice_pdf_url }}\n\nOnce paid, please reply to this email or send a screenshot to our WhatsApp at +92 312 8779368 with your invoice number: {{ $json.body.invoice_number }}.\n\nWelcome aboard,\nVision Infinity Team",
+        "html": "=Hi {{ $json.body.owner_name }},<br><br>Thank you for choosing Vision Infinity!<br><br>You've selected the <strong>{{ $json.body.plan }}</strong> plan for your business ({{ $json.body.business_name }}).<br><br>Your invoice is attached. Please pay Rs. {{ $json.body.total_pkr }} by {{ $json.body.due_date }}.<br><br>You can also download your invoice here: <a href=\"{{ $json.body.invoice_pdf_url }}\">{{ $json.body.invoice_pdf_url }}</a><br><br>Once paid, please reply to this email or send a screenshot to our WhatsApp at <strong>+92 312 8779368</strong> with your invoice number: {{ $json.body.invoice_number }}.<br><br>Welcome aboard,<br>Vision Infinity Team"
+      },
+      "id": "8c359a1c-32b0-4ecb-99f8-b39bc348fb74",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "f76c9688-29be-4bd9-9a74-d02f5a6df405"
+}

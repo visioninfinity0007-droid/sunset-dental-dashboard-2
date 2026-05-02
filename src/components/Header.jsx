@@ -2,9 +2,8 @@
 
 import { usePathname, useRouter } from "next/navigation";
 
-const LOGO_URL = "https://visioninfinity.co/wp-content/uploads/2026/04/Untitled-design-8-1.png";
-
 import Logo from "./Logo";
+import { createBrowserClient } from "@supabase/ssr";
 
 export default function Header({ clientName }) {
   const pathname    = usePathname();
@@ -12,7 +11,11 @@ export default function Header({ clientName }) {
   const isDashboard = pathname?.startsWith("/dashboard");
 
   async function handleLogout() {
-    await fetch("/api/auth", { method: "DELETE" });
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    await supabase.auth.signOut();
     router.replace("/login");
   }
 

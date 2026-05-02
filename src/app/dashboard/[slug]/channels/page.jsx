@@ -10,6 +10,7 @@ export default function ChannelsPage({ params }) {
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [planStatus, setPlanStatus] = useState("active");
 
   const fetchChannels = async () => {
     setLoading(true);
@@ -21,6 +22,11 @@ export default function ChannelsPage({ params }) {
       } else {
         const data = await res.json();
         setError(data.error);
+      }
+      const metaRes = await fetch(`/api/client/${slug}`);
+      if (metaRes.ok) {
+        const meta = await metaRes.json();
+        setPlanStatus(meta.plan_status || "active");
       }
     } catch (err) {
       setError("Failed to load channels");
@@ -90,9 +96,13 @@ export default function ChannelsPage({ params }) {
             <p className="page-subtitle">Manage your connected WhatsApp numbers.</p>
           </div>
           <div className="header-actions">
-            <button className="bg-[#1E5FFF] text-white px-4 py-2 rounded-md hover:bg-blue-600 font-medium" onClick={handleAddChannel}>
-              + Add WhatsApp number
-            </button>
+            {planStatus === "unconfigured" || planStatus === "pending_payment" ? (
+              <span className="text-sm text-gray-400">Connecting WhatsApp numbers is available after activation.</span>
+            ) : (
+              <button className="bg-[#1E5FFF] text-white px-4 py-2 rounded-md hover:bg-blue-600 font-medium" onClick={handleAddChannel}>
+                + Add WhatsApp number
+              </button>
+            )}
           </div>
         </div>
 

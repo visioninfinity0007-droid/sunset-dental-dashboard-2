@@ -280,6 +280,52 @@ export default function DashboardPage({ params }) {
   const clientName = clientMeta?.name || slug;
   const clientLogo = clientMeta?.logo || "📊";
   const clientTagline = clientMeta?.tagline || "Dashboard";
+  const planStatus = clientMeta?.plan_status || "active";
+  
+  const isImpersonating = clientMeta?.isImpersonating || false;
+
+  const handleExitImpersonation = async () => {
+    try {
+      await fetch("/api/admin/exit-impersonation", { method: "POST" });
+      window.location.href = "/admin/tenants";
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const getBanner = () => {
+    switch (planStatus) {
+      case "unconfigured":
+        return (
+          <div className="bg-yellow-900/50 border-b border-yellow-700 text-yellow-200 px-4 py-3 text-sm text-center">
+            Choose your plan to activate your dashboard.{" "}
+            <a href={`/onboarding/choose-plan?slug=${slug}`} className="font-bold underline ml-2">Choose plan &rarr;</a>
+          </div>
+        );
+      case "pending_payment":
+        return (
+          <div className="bg-blue-900/50 border-b border-blue-700 text-blue-200 px-4 py-3 text-sm text-center">
+            Awaiting payment confirmation.{" "}
+            <a href={`/dashboard/${slug}/invoices`} className="underline mr-2">View invoice</a> |{" "}
+            <a href={`https://wa.me/923128779368?text=Hi%20Vision%20Infinity!%20I've%20paid%20for%20the%20${clientMeta?.plan || "selected"}%20plan.%20My%20business%20is%20${encodeURIComponent(clientName)}.`} target="_blank" rel="noopener noreferrer" className="font-bold underline ml-2">Have you paid? Send confirmation to WhatsApp</a>
+          </div>
+        );
+      case "suspended":
+        return (
+          <div className="bg-red-900/50 border-b border-red-700 text-red-200 px-4 py-3 text-sm text-center">
+            Account suspended. Please contact support.
+          </div>
+        );
+      case "cancelled":
+        return (
+          <div className="bg-gray-800 border-b border-gray-600 text-gray-200 px-4 py-3 text-sm text-center">
+            Account cancelled. <a href={`/onboarding/choose-plan?slug=${slug}`} className="underline font-bold ml-2">Reactivate</a>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   const handleDownloadCSV = (dataToExport, filename) => {
     if (!dataToExport || dataToExport.length === 0) return;
@@ -296,7 +342,21 @@ export default function DashboardPage({ params }) {
   };
 
   return (
-    <div className="dashboard-shell">
+    <>
+      {isImpersonating && (
+        <div className="bg-purple-900/80 border-b border-purple-700 text-purple-200 px-4 py-3 text-sm text-center flex items-center justify-center gap-4">
+          <strong>Impersonation Mode Active</strong>
+          <span>(Read-only access to mutations)</span>
+          <button 
+            onClick={handleExitImpersonation}
+            className="bg-purple-700 hover:bg-purple-600 text-white px-3 py-1 rounded text-xs font-bold transition-colors"
+          >
+            Exit Impersonation
+          </button>
+        </div>
+      )}
+      {getBanner()}
+      <div className="dashboard-shell">
       <aside className="sidebar">
         <div className="sidebar-logo">
           <div className="sidebar-logo-mark">

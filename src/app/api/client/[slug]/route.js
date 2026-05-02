@@ -30,7 +30,9 @@ export async function GET(request, { params }) {
     slug: tenant.slug,
     name: tenant.business_name,
     plan: tenant.plan,
+    plan_status: tenant.plan_status,
     instances: instances || [],
     membership: { role: membership?.role || "viewer" },
+    isImpersonating: !!cookies().get("vi_impersonating"),
   });
 }

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function POST(request, { params }) {
+  if (cookies().get("vi_impersonating")) return NextResponse.json({ error: "Read-only mode active." }, { status: 403 });
   const { id } = params;
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);

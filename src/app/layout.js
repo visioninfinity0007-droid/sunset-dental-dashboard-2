@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 export const metadata = {
   title: "Vision Infinity — Client Dashboard",
@@ -20,6 +21,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
+        <GoogleAnalytics ga_id={process.env.NEXT_PUBLIC_GA_ID} />
         <Header />
         <div className="vi-page-body">
           {children}

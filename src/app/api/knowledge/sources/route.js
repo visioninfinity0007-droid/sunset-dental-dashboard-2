@@ -33,6 +33,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  if (cookies().get("vi_impersonating")) return NextResponse.json({ error: "Read-only mode active." }, { status: 403 });
   const body = await request.json();
   const { type, label, content, url, meta } = body;
   

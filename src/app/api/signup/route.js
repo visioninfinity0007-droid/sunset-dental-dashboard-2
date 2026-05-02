@@ -13,7 +13,7 @@ async function getUniqueSlug(supabase, baseSlug) {
   let slug = baseSlug;
   let counter = 1;
   while (true) {
-    const { data } = await supabase.from("tenants").select("id").eq("slug", slug).single();
+    const { data } = await supabase.from("tenants").select("id").eq("slug", slug).maybeSingle();
     if (!data) return slug;
     counter++;
     slug = `${baseSlug}-${counter}`;
@@ -41,7 +41,7 @@ export async function POST(request) {
         .eq("token", inviteToken)
         .is("accepted_at", null)
         .is("revoked_at", null)
-        .single();
+        .maybeSingle();
 
       if (inviteError || !invite) {
         return NextResponse.json({ ok: false, error: "Invalid or expired invite." }, { status: 400 });
@@ -157,84 +157,30 @@ export async function POST(request) {
         return NextResponse.json({ ok: false, error: "Failed to create owner membership." }, { status: 500 });
       }
 
-      // 4. Provision Evolution API Instance
-      const randomShortId = Math.random().toString(16).substring(2, 8);
-      const instanceName = `vi_${slug.replace(/-/g, "")}_${randomShortId}`;
-      const webhookBase = process.env.N8N_WEBHOOK_BASE;
-      const evolutionUrl = process.env.EVOLUTION_API_URL;
-      const apiKey = process.env.EVOLUTION_API_KEY; // Using request-level apikey for v2
 
-      let evoToken = null;
-
-      if (evolutionUrl && apiKey && webhookBase) {
-        try {
-          const evoRes = await fetch(`${evolutionUrl}/instance/create`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: apiKey,
-            },
-            body: JSON.stringify({
-              instanceName,
-              qrcode: true,
-              integration: "WHATSAPP-BAILEYS",
-              webhook: {
-                url: `${webhookBase}/${instanceName}`,
-                events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE", "QRCODE_UPDATED"],
-                webhook_by_events: false,
-                webhook_base64: false,
-              },
-            }),
-          });
-
-          if (!evoRes.ok) {
-            throw new Error(`Evolution API error: ${evoRes.statusText}`);
-          }
-
-          const evoData = await evoRes.json();
-          evoToken = evoData.hash?.apikey || evoData.instance?.token || "";
-        } catch (err) {
-          console.error("Evolution provisioning failed:", err);
-          // Rollback
-          await supabaseAdmin.from("tenants").delete().eq("id", tenant.id);
-          if (isNewUser) await supabaseAdmin.auth.admin.deleteUser(userId);
-          return NextResponse.json({ ok: false, error: "Failed to provision WhatsApp instance." }, { status: 500 });
-        }
-      } else {
-        console.warn("Evolution API env vars missing, skipping instance creation for demo/local purposes.");
-      }
-
-      // 5. Insert Whatsapp Instance
-      const { error: instanceError } = await supabaseAdmin.from("whatsapp_instances").insert({
-        tenant_id: tenant.id,
-        label: "Main line",
-        evolution_instance_name: instanceName,
-        evolution_instance_token: evoToken,
-        is_primary: true,
-        evolution_status: "pending",
-        whatsapp_phone: phone || null,
-      });
-
-      if (instanceError) {
-        // Rollback DB and Evolution
-        await supabaseAdmin.from("tenants").delete().eq("id", tenant.id);
-        if (isNewUser) await supabaseAdmin.auth.admin.deleteUser(userId);
-        if (evolutionUrl && apiKey) {
-          await fetch(`${evolutionUrl}/instance/logout/${instanceName}`, {
-            method: "DELETE",
-            headers: { apikey: apiKey },
-          }).catch(console.error);
-        }
-        return NextResponse.json({ ok: false, error: "Failed to save WhatsApp instance." }, { status: 500 });
-      }
 
       // 6. Sign In
       await supabaseSession.auth.signInWithPassword({ email, password });
 
+      // Healthcheck: Verify tenant resolution works for this newly signed-in user
+      const { data: membership, error: membershipError } = await supabaseAdmin
+        .from("tenant_members")
+        .select("joined_at, tenants!inner(slug)")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .order("joined_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (membershipError || !membership?.tenants?.slug || membership.tenants.slug !== slug) {
+        console.error("HEALTHCHECK FAILED: Signup succeeded but tenant resolution failed for user", userId, membershipError, membership);
+        return NextResponse.json({ ok: false, error: "Account created but tenant resolution failed. Please contact support." }, { status: 500 });
+      }
+
       return NextResponse.json({
         ok: true,
         slug,
-        redirectTo: "/onboarding/connect-whatsapp",
+        redirectTo: `/onboarding/choose-plan?slug=${slug}`,
       });
     }
   } catch (error) {

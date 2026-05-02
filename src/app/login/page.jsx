@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import Logo from "@/components/Logo";
 
 function LoginForm() {
@@ -13,6 +14,11 @@ function LoginForm() {
   const [password,    setPassword]    = useState("");
   const [error,       setError]       = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -25,30 +31,44 @@ function LoginForm() {
       return;
     }
 
-    const res = await fetch("/api/auth", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ email: email.trim(), password }),
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
     });
 
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      setError(data.error || "Incorrect email or password.");
+    if (authError) {
+      setError(authError.message || "Incorrect email or password.");
       setIsSubmitting(false);
       return;
     }
 
-    // Server returns the slug → go directly to that client's dashboard
-    const slug     = data.slug;
-    const nextPath = searchParams.get("next");
+    // Resolve which tenant to send them to
+    const userId = data.user.id;
+    const { data: membership, error: membershipError } = await supabase
+      .from("tenant_members")
+      .select("joined_at, tenants!inner(slug)")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .order("joined_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    // Honour ?next= only if it belongs to their slug
-    if (nextPath && nextPath.startsWith(`/dashboard/${slug}`)) {
-      router.replace(nextPath);
-    } else {
-      router.replace(`/dashboard/${slug}`);
+    if (membershipError) {
+      console.error("Login tenant resolution error:", membershipError);
     }
+
+    const slug = membership?.tenants?.slug;
+    if (!slug) {
+      console.error(`No active tenant found for user ${userId}. Query returned:`, membership);
+      setError("No tenant found for this account. Contact support.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const nextPath = searchParams.get("next");
+    router.replace(nextPath && nextPath.startsWith(`/dashboard/${slug}`)
+      ? nextPath
+      : `/dashboard/${slug}`);
   }
 
   return (
