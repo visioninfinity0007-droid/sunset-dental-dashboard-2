@@ -14,6 +14,7 @@ export default function Footer() {
  
         <div className="vi-footer-links">
           <a href="https://visioninfinity.co" target="_blank" rel="noopener">Website</a>
+          {" | "}
           <a href="mailto:hello@visioninfinity.co">hello@visioninfinity.co</a>
         </div>
  

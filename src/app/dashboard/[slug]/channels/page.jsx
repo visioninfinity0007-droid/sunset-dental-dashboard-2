@@ -11,6 +11,7 @@ export default function ChannelsPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [planStatus, setPlanStatus] = useState("active");
+  const [rescanning, setRescanning] = useState(null);
 
   const fetchChannels = async () => {
     setLoading(true);
@@ -38,6 +39,24 @@ export default function ChannelsPage({ params }) {
   useEffect(() => {
     fetchChannels();
   }, []);
+
+  const handleRescan = async (id) => {
+    setRescanning(id);
+    try {
+      const res = await fetch(`/api/instances/${id}/rescan`, { method: "POST" });
+      if (res.ok) {
+        alert("Instance reconnected successfully.");
+        fetchChannels();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to reconnect instance.");
+      }
+    } catch (err) {
+      alert("Error reconnecting instance.");
+    } finally {
+      setRescanning(null);
+    }
+  };
 
   const handleAddChannel = async () => {
     const label = prompt("Enter a label for the new WhatsApp number (e.g., Sales, Support):");
@@ -147,12 +166,27 @@ export default function ChannelsPage({ params }) {
                 </div>
                 
                 <div className="mt-auto pt-4 border-t border-gray-800 flex gap-2">
-                  {channel.evolution_status !== 'connected' && (
+                  {channel.evolution_status === 'pending' && (
                     <button 
                       onClick={() => router.push(`/onboarding/connect-whatsapp?instance=${channel.id}`)}
                       className="text-sm bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded"
                     >
-                      Reconnect
+                      Scan QR
+                    </button>
+                  )}
+                  {(channel.evolution_status === 'disconnected' || channel.evolution_status === 'error') && (
+                    <button 
+                      onClick={() => handleRescan(channel.id)}
+                      disabled={rescanning === channel.id}
+                      className="text-sm bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {rescanning === channel.id && (
+                        <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
+                      {rescanning === channel.id ? "Reconnecting..." : "Reconnect"}
                     </button>
                   )}
                 </div>

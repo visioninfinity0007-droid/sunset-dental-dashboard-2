@@ -19,7 +19,7 @@ export default function AdminSidebar({ userEmail }) {
     { id: "invoices", icon: "💰", label: "Invoices", path: "/admin/invoices" },
     { id: "audit", icon: "📋", label: "Audit Log", path: "/admin/audit" },
     { id: "health", icon: "🏥", label: "System Health", path: "/admin/health" },
-    { id: "analytics", icon: "📈", label: "Analytics", path: "https://analytics.google.com/", external: true },
+    { id: "analytics", icon: "📈", label: "Analytics", path: "/admin/analytics" },
   ];
 
   return (

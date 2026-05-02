@@ -19,6 +19,7 @@ function SignupForm() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,7 +35,7 @@ function SignupForm() {
     try {
       const payload = {
         fullName: formData.fullName,
-        email: formData.email,
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
       };
 
@@ -96,7 +97,8 @@ function SignupForm() {
                     required
                     value={formData.businessName}
                     onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-[#1E5FFF] focus:border-[#1E5FFF] sm:text-sm bg-[#1a1d2d] text-white"
+                    disabled={loading}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-[#1E5FFF] focus:border-[#1E5FFF] sm:text-sm bg-[#1a1d2d] text-white disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -114,7 +116,8 @@ function SignupForm() {
                   required
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-[#1E5FFF] focus:border-[#1E5FFF] sm:text-sm bg-[#1a1d2d] text-white"
+                  disabled={loading}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-[#1E5FFF] focus:border-[#1E5FFF] sm:text-sm bg-[#1a1d2d] text-white disabled:opacity-50"
                 />
               </div>
             </div>
@@ -132,7 +135,8 @@ function SignupForm() {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-[#1E5FFF] focus:border-[#1E5FFF] sm:text-sm bg-[#1a1d2d] text-white"
+                  disabled={loading}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-[#1E5FFF] focus:border-[#1E5FFF] sm:text-sm bg-[#1a1d2d] text-white disabled:opacity-50"
                 />
               </div>
             </div>
@@ -141,18 +145,31 @@ function SignupForm() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-300">
                 Password
               </label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   required
                   minLength={8}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-[#1E5FFF] focus:border-[#1E5FFF] sm:text-sm bg-[#1a1d2d] text-white"
+                  disabled={loading}
+                  className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-700 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-[#1E5FFF] focus:border-[#1E5FFF] sm:text-sm bg-[#1a1d2d] text-white disabled:opacity-50"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                  disabled={loading}
+                >
+                  {showPassword ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -168,7 +185,8 @@ function SignupForm() {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-[#1E5FFF] focus:border-[#1E5FFF] sm:text-sm bg-[#1a1d2d] text-white"
+                    disabled={loading}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-[#1E5FFF] focus:border-[#1E5FFF] sm:text-sm bg-[#1a1d2d] text-white disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -181,7 +199,8 @@ function SignupForm() {
                 type="checkbox"
                 checked={formData.terms}
                 onChange={(e) => setFormData({ ...formData, terms: e.target.checked })}
-                className="h-4 w-4 text-[#1E5FFF] focus:ring-[#1E5FFF] border-gray-700 rounded bg-[#1a1d2d]"
+                disabled={loading}
+                className="h-4 w-4 text-[#1E5FFF] focus:ring-[#1E5FFF] border-gray-700 rounded bg-[#1a1d2d] disabled:opacity-50"
               />
               <label htmlFor="terms" className="ml-2 block text-sm text-gray-300">
                 I agree to the Terms of Service
@@ -196,9 +215,17 @@ function SignupForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#1E5FFF] hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1E5FFF] disabled:opacity-50"
+                className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#1E5FFF] hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1E5FFF] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Creating account..." : (inviteToken ? "Join Team" : "Get Started")}
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating account...
+                  </>
+                ) : (inviteToken ? "Join Team" : "Get Started")}
               </button>
             </div>
           </form>
