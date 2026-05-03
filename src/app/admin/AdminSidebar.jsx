@@ -26,7 +26,7 @@ export default function AdminSidebar({ userEmail }) {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo">
+      <Link href="/admin/overview" className="sidebar-logo block">
         <div className="sidebar-logo-mark">
           <div className="logo-icon">👑</div>
           <div className="logo-text">
@@ -34,7 +34,7 @@ export default function AdminSidebar({ userEmail }) {
             <span>Vision Infinity</span>
           </div>
         </div>
-      </div>
+      </Link>
 
       <nav className="sidebar-nav">
         <span className="nav-section-label">Operations</span>

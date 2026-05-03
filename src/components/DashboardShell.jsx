@@ -86,7 +86,7 @@ export default function DashboardShell({
     <div className="dashboard-shell">
       {/* Desktop Sidebar */}
       <aside className="sidebar hidden lg:flex">
-        <div className="sidebar-logo">
+        <Link href={`/dashboard/${slug}`} className="sidebar-logo block">
           <div className="sidebar-logo-mark">
             <div className="logo-icon">{clientLogo}</div>
             <div className="logo-text">
@@ -94,7 +94,7 @@ export default function DashboardShell({
               <span>{clientTagline}</span>
             </div>
           </div>
-        </div>
+        </Link>
 
         <nav className="sidebar-nav" aria-label="Desktop Dashboard navigation">
           <span className="nav-section-label">Dashboard</span>

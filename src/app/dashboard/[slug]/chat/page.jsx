@@ -224,7 +224,7 @@ export default function ChatPage({ params }) {
           {selectedLead ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-800 bg-[#161a29] flex justify-between items-center">
+              <div className="sticky top-0 z-20 p-4 border-b border-gray-800 bg-[#161a29] flex justify-between items-center shrink-0">
                 <div className="flex items-center gap-3">
                   <button 
                     className="lg:hidden mr-2 p-1" 
@@ -232,12 +232,12 @@ export default function ChatPage({ params }) {
                   >
                     <ArrowLeft className="w-5 h-5 text-white" />
                   </button>
-                  <div>
-                    <h3 className="font-bold text-white">{selectedLead.name || selectedLead.phone}</h3>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-white truncate">{selectedLead.name || selectedLead.phone}</h3>
                     <p className="text-xs text-gray-400">{selectedLead.phone}</p>
                   </div>
                 </div>
-                <div>
+                <div className="shrink-0 ml-2">
                   <button 
                     onClick={handleToggleHandler}
                     className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
@@ -246,13 +246,13 @@ export default function ChatPage({ params }) {
                         : 'bg-green-900/80 text-green-300 hover:bg-green-800'
                     }`}
                   >
-                    {selectedLead.current_handler === 'bot' ? 'Takeover Conversation' : 'Return to Bot'}
+                    {selectedLead.current_handler === 'bot' ? 'Takeover' : 'Return'}
                   </button>
                 </div>
               </div>
 
               {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 min-h-0">
                 {messages.length >= 50 && (
                   <div className="text-center pb-4">
                     <button onClick={loadMoreMessages} className="text-xs text-blue-400 hover:text-blue-300">Load previous messages</button>
@@ -265,7 +265,7 @@ export default function ChatPage({ params }) {
                 ) : (
                   messages.map(msg => (
                     <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-start' : 'justify-end'}`}>
-                      <div className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                      <div className={`max-w-[85%] lg:max-w-[70%] rounded-2xl px-4 py-2 ${
                         msg.sender === 'user' 
                           ? 'bg-gray-800 text-gray-200 rounded-tl-sm' 
                           : msg.sender === 'bot'
@@ -285,7 +285,7 @@ export default function ChatPage({ params }) {
               </div>
 
               {/* Message Input */}
-              <div className="p-4 bg-[#161a29] border-t border-gray-800">
+              <div className="sticky bottom-0 z-20 p-4 bg-[#161a29] border-t border-gray-800 shrink-0">
                 <form onSubmit={handleSendMessage} className="flex gap-2">
                   <input 
                     type="text" 
@@ -293,12 +293,12 @@ export default function ChatPage({ params }) {
                     onChange={(e) => setMessageInput(e.target.value)}
                     placeholder="Type a message..."
                     disabled={sending}
-                    className="flex-1 bg-[#0f111a] border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-[#1E5FFF]"
+                    className="flex-1 bg-[#0f111a] border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-[#1E5FFF] min-w-0"
                   />
                   <button 
                     type="submit" 
                     disabled={!messageInput.trim() || sending}
-                    className="bg-[#1E5FFF] hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                    className="bg-[#1E5FFF] hover:bg-blue-600 text-white px-4 lg:px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 shrink-0"
                   >
                     {sending ? '...' : 'Send'}
                   </button>
