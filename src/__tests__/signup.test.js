@@ -56,6 +56,9 @@ describe("Signup POST Route", () => {
 
   const createRequest = (body) => ({
     json: async () => body,
+    headers: {
+      get: vi.fn().mockReturnValue(null)
+    }
   });
 
   it("fails if required fields are missing", async () => {

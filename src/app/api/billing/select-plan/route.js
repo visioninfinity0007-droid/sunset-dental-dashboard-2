@@ -49,7 +49,10 @@ export async function POST(request) {
     }
 
     const selectedPlan = PLANS[plan];
-    const totalPkr = selectedPlan.setup + selectedPlan.monthly;
+    const subtotalPkr = selectedPlan.setup + selectedPlan.monthly;
+    const gstPct = parseFloat(process.env.INVOICE_GST_PCT || "0");
+    const gstPkr = gstPct > 0 ? Math.round(subtotalPkr * gstPct / 100) : 0;
+    const totalPkr = subtotalPkr + gstPkr;
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 7);
 
@@ -77,13 +80,20 @@ export async function POST(request) {
     page.drawText(`Due Date: ${dueDate.toLocaleDateString()}`, { x: 50, y: height - 110, size: 10, font });
 
     // Bill From
+    const bizName = process.env.INVOICE_BUSINESS_NAME || "Vision Infinity";
+    const bizAddress = process.env.INVOICE_BUSINESS_ADDRESS || "(not provided)";
+    const bizNTN = process.env.INVOICE_BUSINESS_NTN || "(not provided)";
+    const bizSTRN = process.env.INVOICE_BUSINESS_STRN || "(not provided)";
+    const bizEmail = process.env.INVOICE_BUSINESS_EMAIL || "(not provided)";
+    const bizWhatsApp = process.env.INVOICE_BUSINESS_WHATSAPP || "(not provided)";
+
     page.drawText("Bill From:", { x: 50, y: height - 150, size: 12, font: boldFont });
-    page.drawText("Vision Infinity", { x: 50, y: height - 170, size: 10, font });
-    page.drawText("Address: <!-- FILL_BEFORE_SENDING: business address -->", { x: 50, y: height - 185, size: 10, font });
-    page.drawText("NTN: <!-- FILL_BEFORE_SENDING: NTN if applicable -->", { x: 50, y: height - 200, size: 10, font });
-    page.drawText("STRN: <!-- FILL_BEFORE_SENDING: STRN if applicable -->", { x: 50, y: height - 215, size: 10, font });
-    page.drawText("Email: hello@visioninfinity.co", { x: 50, y: height - 230, size: 10, font });
-    page.drawText("WhatsApp: +92 312 8779368", { x: 50, y: height - 245, size: 10, font });
+    page.drawText(bizName, { x: 50, y: height - 170, size: 10, font });
+    page.drawText(`Address: ${bizAddress}`, { x: 50, y: height - 185, size: 10, font });
+    page.drawText(`NTN: ${bizNTN}`, { x: 50, y: height - 200, size: 10, font });
+    page.drawText(`STRN: ${bizSTRN}`, { x: 50, y: height - 215, size: 10, font });
+    page.drawText(`Email: ${bizEmail}`, { x: 50, y: height - 230, size: 10, font });
+    page.drawText(`WhatsApp: ${bizWhatsApp}`, { x: 50, y: height - 245, size: 10, font });
 
     // Bill To
     page.drawText("Bill To:", { x: 300, y: height - 150, size: 12, font: boldFont });
@@ -115,23 +125,33 @@ export async function POST(request) {
 
     // Totals
     page.drawText("Subtotal:", { x: 400, y: tableY - 105, size: 10, font });
-    page.drawText(`${totalPkr.toLocaleString()}`, { x: 480, y: tableY - 105, size: 10, font });
-    page.drawText("GST:", { x: 400, y: tableY - 120, size: 10, font });
-    page.drawText("<!-- FILL -->", { x: 480, y: tableY - 120, size: 10, font });
+    page.drawText(`${subtotalPkr.toLocaleString()}`, { x: 480, y: tableY - 105, size: 10, font });
     
-    page.drawText("Total Due:", { x: 400, y: tableY - 140, size: 12, font: boldFont });
-    page.drawText(`Rs. ${totalPkr.toLocaleString()}`, { x: 480, y: tableY - 140, size: 12, font: boldFont });
+    let totalY = tableY - 120;
+    if (gstPct > 0) {
+      page.drawText(`GST (${gstPct}%):`, { x: 400, y: totalY, size: 10, font });
+      page.drawText(`${gstPkr.toLocaleString()}`, { x: 480, y: totalY, size: 10, font });
+      totalY -= 20;
+    }
+    
+    page.drawText("Total Due:", { x: 400, y: totalY, size: 12, font: boldFont });
+    page.drawText(`Rs. ${totalPkr.toLocaleString()}`, { x: 480, y: totalY, size: 12, font: boldFont });
 
     // Payment Box
+    const bankName = process.env.INVOICE_BANK_NAME || "(not provided)";
+    const bankTitle = process.env.INVOICE_BANK_ACCOUNT_TITLE || "(not provided)";
+    const bankAccount = process.env.INVOICE_BANK_ACCOUNT_NUMBER || "(not provided)";
+    const bankIban = process.env.INVOICE_BANK_IBAN || "";
+
     const payBoxY = tableY - 250;
     page.drawRectangle({ x: 50, y: payBoxY, width: 300, height: 90, color: rgb(0.95, 0.95, 0.95) });
     page.drawText("Payment Instructions:", { x: 60, y: payBoxY + 70, size: 10, font: boldFont });
     page.drawText("Pay via bank transfer to:", { x: 60, y: payBoxY + 55, size: 9, font });
-    page.drawText("Bank: <!-- FILL_BEFORE_SENDING -->", { x: 60, y: payBoxY + 40, size: 9, font });
-    page.drawText("Account Title: <!-- FILL_BEFORE_SENDING -->", { x: 60, y: payBoxY + 25, size: 9, font });
-    page.drawText("Account #: <!-- FILL_BEFORE_SENDING -->", { x: 60, y: payBoxY + 10, size: 9, font });
+    page.drawText(`Bank: ${bankName}`, { x: 60, y: payBoxY + 40, size: 9, font });
+    page.drawText(`Account Title: ${bankTitle}`, { x: 60, y: payBoxY + 25, size: 9, font });
+    page.drawText(`Account #: ${bankAccount}${bankIban ? ` / IBAN: ${bankIban}` : ""}`, { x: 60, y: payBoxY + 10, size: 9, font });
     
-    page.drawText("After payment, send a screenshot to WhatsApp +92 312 8779368", { x: 50, y: payBoxY - 20, size: 9, font: boldFont });
+    page.drawText(`After payment, send a screenshot to WhatsApp ${bizWhatsApp}`, { x: 50, y: payBoxY - 20, size: 9, font: boldFont });
     page.drawText(`with your invoice number (${invoiceNumber}) to activate your account.`, { x: 50, y: payBoxY - 35, size: 9, font });
 
     // Footer
@@ -217,6 +237,11 @@ export async function POST(request) {
           invoice_pdf_url: signedUrlData?.signedUrl || "",
           total_pkr: totalPkr,
           due_date: dueDate.toISOString().split("T")[0],
+          payment_bank: bankName,
+          payment_title: bankTitle,
+          payment_account: bankAccount,
+          payment_iban: bankIban,
+          support_whatsapp: bizWhatsApp,
         })
       }).catch(err => console.error("Webhook failed:", err));
     }

@@ -26,6 +26,14 @@ export async function GET(request, { params }) {
     .eq("user_id", user.id)
     .single();
 
+  const { data: invoice } = await supabase
+    .from("invoices")
+    .select("id, invoice_number")
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   return NextResponse.json({
     slug: tenant.slug,
     name: tenant.business_name,
@@ -34,5 +42,7 @@ export async function GET(request, { params }) {
     instances: instances || [],
     membership: { role: membership?.role || "viewer" },
     isImpersonating: !!cookies().get("vi_impersonating"),
+    latest_invoice_id: invoice?.id,
+    invoice_number: invoice?.invoice_number,
   });
 }

@@ -11,8 +11,11 @@ export default function ChannelsPage({ params }) {
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [clientMeta, setClientMeta] = useState({});
   const [planStatus, setPlanStatus] = useState("active");
   const [rescanning, setRescanning] = useState(null);
+  const [menuOpenId, setMenuOpenId] = useState(null);
+  const menuRef = React.useRef(null);
 
   const fetchChannels = async () => {
     setLoading(true);
@@ -28,6 +31,7 @@ export default function ChannelsPage({ params }) {
       const metaRes = await fetch(`/api/client/${slug}`);
       if (metaRes.ok) {
         const meta = await metaRes.json();
+        setClientMeta(meta);
         setPlanStatus(meta.plan_status || "active");
       }
     } catch (err) {
@@ -39,6 +43,15 @@ export default function ChannelsPage({ params }) {
 
   useEffect(() => {
     fetchChannels();
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpenId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const handleRescan = async (id) => {
@@ -46,8 +59,7 @@ export default function ChannelsPage({ params }) {
     try {
       const res = await fetch(`/api/instances/${id}/rescan`, { method: "POST" });
       if (res.ok) {
-        alert("Instance reconnected successfully.");
-        fetchChannels();
+        router.push(`/onboarding/connect-whatsapp?instance=${id}`);
       } else {
         const data = await res.json();
         alert(data.error || "Failed to reconnect instance.");
@@ -56,6 +68,85 @@ export default function ChannelsPage({ params }) {
       alert("Error reconnecting instance.");
     } finally {
       setRescanning(null);
+      setMenuOpenId(null);
+    }
+  };
+
+  const handleSetPrimary = async (id) => {
+    try {
+      const res = await fetch(`/api/instances/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_primary: true })
+      });
+      if (res.ok) fetchChannels();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setMenuOpenId(null);
+    }
+  };
+
+  const handleRefreshQR = async (id) => {
+    try {
+      const res = await fetch(`/api/instances/${id}/refresh-qr`, { method: "POST" });
+      if (res.ok) {
+        router.push(`/onboarding/connect-whatsapp?instance=${id}`);
+      } else {
+        alert("Failed to refresh QR.");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setMenuOpenId(null);
+    }
+  };
+
+  const handleDisconnect = async (id) => {
+    if (!confirm("Are you sure you want to disconnect this instance?")) return;
+    try {
+      const res = await fetch(`/api/instances/${id}/disconnect`, { method: "POST" });
+      if (res.ok) fetchChannels();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setMenuOpenId(null);
+    }
+  };
+
+  const handleRename = async (id, currentLabel) => {
+    const label = prompt("Enter a new label for the WhatsApp number:", currentLabel);
+    if (!label || label === currentLabel) {
+      setMenuOpenId(null);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/instances/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label })
+      });
+      if (res.ok) fetchChannels();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setMenuOpenId(null);
+    }
+  };
+
+  const handleDelete = async (id, channelName) => {
+    const conf = prompt(`This will permanently disconnect WhatsApp for this number and delete all message history. Type the channel name (${channelName}) to confirm.`);
+    if (conf !== channelName) {
+      setMenuOpenId(null);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/instances/${id}`, { method: "DELETE" });
+      if (res.ok) fetchChannels();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setMenuOpenId(null);
     }
   };
 
@@ -100,8 +191,17 @@ export default function ChannelsPage({ params }) {
             <p className="page-subtitle">Manage your connected WhatsApp numbers.</p>
           </div>
           <div className="header-actions">
-            {planStatus === "unconfigured" || planStatus === "pending_payment" ? (
+            {planStatus === "unconfigured" ? (
               <span className="text-sm text-gray-400">Connecting WhatsApp numbers is available after activation.</span>
+            ) : planStatus === "pending_payment" ? (
+              <div className="bg-blue-900/50 border border-blue-700 text-blue-200 px-4 py-2 text-sm rounded max-w-xl text-left">
+                ⏳ <strong>Awaiting payment confirmation.</strong> Once you've paid via bank transfer, send a screenshot to{" "}
+                <a href={`https://wa.me/923128779368?text=Hi%20Vision%20Infinity!%20I've%20paid%20for%20the%20${clientMeta?.plan || "selected"}%20plan.%20My%20business%20is%20${encodeURIComponent(clientMeta?.name || slug)}.%20Invoice%20number:%20${clientMeta?.invoice_number || ""}`} target="_blank" rel="noopener noreferrer" className="font-bold underline text-white">WhatsApp +92 312 8779368</a>{" "}
+                with your invoice number. Activation typically happens within 24 hours.
+                {clientMeta?.latest_invoice_id && (
+                  <div><a href={`/api/invoices/${clientMeta.latest_invoice_id}/download`} className="underline mt-1 inline-block text-blue-300 hover:text-blue-100">View invoice</a></div>
+                )}
+              </div>
             ) : (
               <button className="bg-[#1E5FFF] text-white px-4 py-2 rounded-md hover:bg-blue-600 font-medium" onClick={handleAddChannel}>
                 + Add WhatsApp number
@@ -129,8 +229,43 @@ export default function ChannelsPage({ params }) {
                       </span>
                     )}
                   </h3>
-                  <div className="relative">
-                    <button className="text-gray-400 hover:text-white">...</button>
+                  <div className="relative" ref={menuOpenId === channel.id ? menuRef : null}>
+                    <button 
+                      className="text-gray-400 hover:text-white px-2 py-1 rounded" 
+                      onClick={() => setMenuOpenId(menuOpenId === channel.id ? null : channel.id)}
+                    >
+                      ...
+                    </button>
+                    {menuOpenId === channel.id && (
+                      <div className="absolute right-0 mt-2 w-48 bg-[#1a1d2d] rounded-md shadow-lg py-1 z-10 border border-gray-700">
+                        {!channel.is_primary && (
+                          <button onClick={() => handleSetPrimary(channel.id)} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                            Set as Primary
+                          </button>
+                        )}
+                        {(channel.evolution_status === 'disconnected' || channel.evolution_status === 'failed') && (
+                          <button onClick={() => handleRescan(channel.id)} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                            Reconnect
+                          </button>
+                        )}
+                        {channel.evolution_status === 'qr_ready' && (
+                          <button onClick={() => handleRefreshQR(channel.id)} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                            Refresh QR
+                          </button>
+                        )}
+                        {channel.evolution_status === 'connected' && (
+                          <button onClick={() => handleDisconnect(channel.id)} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                            Disconnect
+                          </button>
+                        )}
+                        <button onClick={() => handleRename(channel.id, channel.label)} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                          Rename
+                        </button>
+                        <button onClick={() => handleDelete(channel.id, channel.label)} className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800">
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -163,10 +298,10 @@ export default function ChannelsPage({ params }) {
                     <button 
                       onClick={() => handleRescan(channel.id)}
                       disabled={rescanning === channel.id}
-                      className="text-sm bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded disabled:opacity-50 flex items-center gap-2"
+                      className="text-sm border border-[#1E5FFF] text-[#1E5FFF] hover:bg-blue-900/30 px-3 py-1.5 rounded disabled:opacity-50 flex items-center gap-2 font-medium"
                     >
                       {rescanning === channel.id && (
-                        <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-3 w-3 text-[#1E5FFF]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>

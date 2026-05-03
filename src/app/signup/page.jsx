@@ -16,6 +16,8 @@ function SignupForm() {
     password: "",
     phone: "",
     terms: false,
+    privacy: false,
+    dpa: false,
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,18 +27,20 @@ function SignupForm() {
     e.preventDefault();
     setError("");
 
-    if (!formData.terms) {
-      setError("You must agree to the terms.");
+    if (!formData.terms || !formData.privacy || !formData.dpa) {
+      setError("You must agree to all legal agreements.");
       return;
     }
 
     setLoading(true);
 
     try {
-      const payload = {
         fullName: formData.fullName,
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
+        acceptedTerms: formData.terms,
+        acceptedPrivacy: formData.privacy,
+        acceptedDPA: formData.dpa,
       };
 
       if (inviteToken) {
@@ -192,18 +196,18 @@ function SignupForm() {
               </div>
             )}
 
-            <div className="flex items-center">
-              <input
-                id="terms"
-                name="terms"
-                type="checkbox"
-                checked={formData.terms}
-                onChange={(e) => setFormData({ ...formData, terms: e.target.checked })}
-                disabled={loading}
-                className="h-4 w-4 text-[#1E5FFF] focus:ring-[#1E5FFF] border-gray-700 rounded bg-[#1a1d2d] disabled:opacity-50"
-              />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-300">
-                I agree to the Terms of Service
+            <div className="space-y-3">
+              <label className="flex items-center">
+                <input type="checkbox" required checked={formData.terms} onChange={(e) => setFormData({ ...formData, terms: e.target.checked })} disabled={loading} className="h-4 w-4 text-[#1E5FFF] focus:ring-[#1E5FFF] border-gray-700 rounded bg-[#1a1d2d] disabled:opacity-50" />
+                <span className="ml-2 text-sm text-gray-300">I agree to the <a href="/terms" target="_blank" className="text-blue-500 underline">Terms of Service</a></span>
+              </label>
+              <label className="flex items-center">
+                <input type="checkbox" required checked={formData.privacy} onChange={(e) => setFormData({ ...formData, privacy: e.target.checked })} disabled={loading} className="h-4 w-4 text-[#1E5FFF] focus:ring-[#1E5FFF] border-gray-700 rounded bg-[#1a1d2d] disabled:opacity-50" />
+                <span className="ml-2 text-sm text-gray-300">I agree to the <a href="/privacy" target="_blank" className="text-blue-500 underline">Privacy Policy</a></span>
+              </label>
+              <label className="flex items-center">
+                <input type="checkbox" required checked={formData.dpa} onChange={(e) => setFormData({ ...formData, dpa: e.target.checked })} disabled={loading} className="h-4 w-4 text-[#1E5FFF] focus:ring-[#1E5FFF] border-gray-700 rounded bg-[#1a1d2d] disabled:opacity-50" />
+                <span className="ml-2 text-sm text-gray-300">I agree to the <a href="/dpa" target="_blank" className="text-blue-500 underline">Data Processing Agreement</a></span>
               </label>
             </div>
 

@@ -23,7 +23,7 @@ async function getUniqueSlug(supabase, baseSlug) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { businessName, fullName, email, password, phone, inviteToken } = body;
+    const { businessName, fullName, email, password, phone, inviteToken, acceptedTerms, acceptedPrivacy, acceptedDPA } = body;
 
     if (!email || !password || !fullName) {
       return NextResponse.json({ ok: false, error: "Missing required fields." }, { status: 400 });
@@ -142,6 +142,22 @@ export async function POST(request) {
         if (isNewUser) await supabaseAdmin.auth.admin.deleteUser(userId);
         return NextResponse.json({ ok: false, error: "Failed to create tenant." }, { status: 500 });
       }
+
+      // Insert Audit Log
+      await supabaseAdmin.from("audit_log").insert({
+        actor_user_id: userId,
+        actor_email: email,
+        action: "signup",
+        target_type: "tenant",
+        target_id: tenant.id,
+        metadata: {
+          acceptedTerms: !!acceptedTerms,
+          acceptedPrivacy: !!acceptedPrivacy,
+          acceptedDPA: !!acceptedDPA
+        },
+        ip_address: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
+        user_agent: request.headers.get("user-agent") || "unknown"
+      });
 
       // 3. Insert Member (Owner)
       const { error: memberError } = await supabaseAdmin.from("tenant_members").insert({

@@ -109,9 +109,9 @@ export default function BotConfigPage({ params }) {
                     className="w-full px-4 py-2 bg-[#161a29] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#1E5FFF]"
                   >
                     <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="pt">Portuguese</option>
-                    <option value="fr">French</option>
+                    <option value="ur">Urdu</option>
+                    <option value="roman_ur">Roman Urdu</option>
+                    <option value="all">All Languages (English + Urdu + Roman Urdu)</option>
                   </select>
                 </div>
               </div>

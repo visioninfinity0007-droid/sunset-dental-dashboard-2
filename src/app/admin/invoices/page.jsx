@@ -143,7 +143,7 @@ export default function InvoicesPage() {
                       <td className="px-6 py-4 text-right">
                         {inv.pdf_storage_path && (
                           <a 
-                            href={`/api/billing/download?path=${encodeURIComponent(inv.pdf_storage_path)}`} 
+                            href={`/api/admin/invoices/${inv.id}/download`} 
                             target="_blank" 
                             rel="noreferrer"
                             className="text-[#1E5FFF] hover:underline"

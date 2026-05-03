@@ -34,13 +34,17 @@ export async function POST(request, { params }) {
     // Fetch instance name
     const { data: instance, error: instanceErr } = await supabase
       .from('whatsapp_instances')
-      .select('evolution_instance_name')
+      .select('evolution_instance_name, evolution_status')
       .eq('id', instanceId)
       .eq('tenant_id', tenant.id)
       .single();
 
     if (instanceErr || !instance) {
       return NextResponse.json({ error: "Instance not found" }, { status: 404 });
+    }
+
+    if (instance.evolution_status === 'disconnected' || instance.evolution_status === 'failed') {
+      return NextResponse.json({ error: "WhatsApp instance is not connected. Reconnect from the Channels page." }, { status: 503 });
     }
 
     // Call Evolution API
@@ -85,9 +89,10 @@ export async function POST(request, { params }) {
 
     if (msgErr) throw msgErr;
     
-    // Update lead's last_contact and unread_count (since we responded, maybe clear unread_count? Or update last message preview)
+    // Update lead's last_contact and last_message
     // The webhook might handle this, but for immediate UI updates, it's good to do it here.
     await supabase.from('leads').update({
+      last_message: message,
       last_contact: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }).eq('tenant_id', tenant.id).eq('phone', phone);

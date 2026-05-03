@@ -52,7 +52,12 @@ export async function PATCH(request, { params }) {
     const updates = {};
     if (config !== undefined) updates.bot_config = config;
     if (personality !== undefined) updates.bot_personality = personality;
-    if (language !== undefined) updates.bot_default_language = language;
+    if (language !== undefined) {
+      if (!['en', 'ur', 'roman_ur', 'all'].includes(language)) {
+        return NextResponse.json({ error: "Invalid language selection" }, { status: 400 });
+      }
+      updates.bot_default_language = language;
+    }
 
     const { error: updateErr } = await supabase
       .from('tenants')

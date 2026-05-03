@@ -194,14 +194,17 @@ export default function ChatPage({ params }) {
                   </div>
                   <div className="flex justify-between items-center mt-2">
                     <div className="flex gap-2">
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
-                        lead.intent === 'hot' ? 'bg-red-900/50 text-red-400' :
-                        lead.intent === 'warm' ? 'bg-orange-900/50 text-orange-400' :
-                        lead.intent === 'emergency' ? 'bg-purple-900/50 text-purple-400' :
-                        'bg-gray-800 text-gray-400'
-                      }`}>
-                        {lead.intent || 'cold'}
-                      </span>
+                      {lead.intent_level && (
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold flex items-center gap-1 ${
+                          lead.intent_level === 'hot' ? 'bg-red-900/50 text-red-400' :
+                          lead.intent_level === 'warm' ? 'bg-orange-900/50 text-orange-400' :
+                          lead.intent_level === 'emergency' ? 'bg-red-600 text-white' :
+                          'bg-gray-800 text-gray-400'
+                        }`}>
+                          {lead.intent_level === 'emergency' && <span>🔔</span>}
+                          {lead.intent_level}
+                        </span>
+                      )}
                       <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
                         lead.current_handler === 'bot' ? 'bg-blue-900/50 text-blue-400' : 'bg-green-900/50 text-green-400'
                       }`}>

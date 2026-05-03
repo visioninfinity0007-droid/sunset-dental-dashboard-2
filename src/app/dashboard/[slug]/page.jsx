@@ -305,10 +305,13 @@ export default function DashboardPage({ params }) {
         );
       case "pending_payment":
         return (
-          <div className="bg-blue-900/50 border-b border-blue-700 text-blue-200 px-4 py-3 text-sm text-center">
-            Awaiting payment confirmation.{" "}
-            <a href={`/dashboard/${slug}/invoices`} className="underline mr-2">View invoice</a> |{" "}
-            <a href={`https://wa.me/923128779368?text=Hi%20Vision%20Infinity!%20I've%20paid%20for%20the%20${clientMeta?.plan || "selected"}%20plan.%20My%20business%20is%20${encodeURIComponent(clientName)}.`} target="_blank" rel="noopener noreferrer" className="font-bold underline ml-2">Have you paid? Send confirmation to WhatsApp</a>
+          <div className="bg-blue-900/50 border-b border-blue-700 text-blue-200 px-4 py-3 text-sm text-center leading-relaxed">
+            ⏳ <strong>Awaiting payment confirmation.</strong> Once you've paid via bank transfer, send a screenshot to{" "}
+            <a href={`https://wa.me/923128779368?text=Hi%20Vision%20Infinity!%20I've%20paid%20for%20the%20${clientMeta?.plan || "selected"}%20plan.%20My%20business%20is%20${encodeURIComponent(clientName)}.%20Invoice%20number:%20${clientMeta?.invoice_number || ""}`} target="_blank" rel="noopener noreferrer" className="font-bold underline text-white">WhatsApp +92 312 8779368</a>{" "}
+            with your invoice number. Activation typically happens within 24 hours.<br/>
+            {clientMeta?.latest_invoice_id && (
+              <a href={`/api/invoices/${clientMeta.latest_invoice_id}/download`} className="underline mt-1 inline-block text-blue-300 hover:text-blue-100">View invoice</a>
+            )}
           </div>
         );
       case "suspended":
