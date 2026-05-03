@@ -14,6 +14,8 @@ export default function ChannelsPage({ params }) {
   const [clientMeta, setClientMeta] = useState({});
   const [planStatus, setPlanStatus] = useState("active");
   const [rescanning, setRescanning] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newChannelLabel, setNewChannelLabel] = useState("");
   const [menuOpenId, setMenuOpenId] = useState(null);
   const menuRef = React.useRef(null);
 
@@ -150,21 +152,26 @@ export default function ChannelsPage({ params }) {
     }
   };
 
-  const handleAddChannel = async () => {
-    const label = prompt("Enter a label for the new WhatsApp number (e.g., Sales, Support):");
-    if (!label) return;
+  const handleAddChannel = async (e) => {
+    e.preventDefault();
+    if (!newChannelLabel) return;
     
-    // We need the tenant id, but the api/channels uses the active tenant from server side.
+    setLoading(true);
     try {
-      // First find tenantId from channels or a separate call
-      // Since all channels have the same tenant_id, we can pick the first one
-      if (channels.length === 0) return;
-      const tenantId = channels[0].tenant_id;
+      if (channels.length === 0) {
+        // If no channels, we need to get tenant info another way or wait
+        const tenantRes = await fetch(`/api/client/${slug}`);
+        const tenantData = await tenantRes.json();
+        if (!tenantData.id) throw new Error("Tenant ID not found");
+        var tenantId = tenantData.id;
+      } else {
+        var tenantId = channels[0].tenant_id;
+      }
       
       const res = await fetch("/api/channels", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenantId, label }),
+        body: JSON.stringify({ tenantId, label: newChannelLabel }),
       });
       
       if (res.ok) {
@@ -174,7 +181,11 @@ export default function ChannelsPage({ params }) {
         alert("Failed to add channel.");
       }
     } catch (err) {
-      alert("Error adding channel.");
+      alert("Error adding channel: " + err.message);
+    } finally {
+      setLoading(false);
+      setIsAddModalOpen(false);
+      setNewChannelLabel("");
     }
   };
 
@@ -185,12 +196,12 @@ export default function ChannelsPage({ params }) {
       userEmail="" // Ideally fetched, but we match the layout's behavior
       clientMeta={{ plan_status: planStatus }}
     >
-      <div className="page-header">
-          <div className="page-title-block">
-            <h1 className="page-title">WhatsApp Channels</h1>
-            <p className="page-subtitle">Manage your connected WhatsApp numbers.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 px-8 py-6">
+          <div>
+            <h1 className="text-xl font-semibold text-white">WhatsApp Channels</h1>
+            <p className="text-sm text-gray-400">Manage your connected WhatsApp numbers.</p>
           </div>
-          <div className="header-actions">
+          <div className="flex-shrink-0">
             {planStatus === "unconfigured" ? (
               <span className="text-sm text-gray-400">Connecting WhatsApp numbers is available after activation.</span>
             ) : planStatus === "pending_payment" ? (
@@ -198,17 +209,50 @@ export default function ChannelsPage({ params }) {
                 ⏳ <strong>Awaiting payment confirmation.</strong> Once you've paid via bank transfer, send a screenshot to{" "}
                 <a href={`https://wa.me/923128779368?text=Hi%20Vision%20Infinity!%20I've%20paid%20for%20the%20${clientMeta?.plan || "selected"}%20plan.%20My%20business%20is%20${encodeURIComponent(clientMeta?.name || slug)}.%20Invoice%20number:%20${clientMeta?.invoice_number || ""}`} target="_blank" rel="noopener noreferrer" className="font-bold underline text-white">WhatsApp +92 312 8779368</a>{" "}
                 with your invoice number. Activation typically happens within 24 hours.
-                {clientMeta?.latest_invoice_id && (
-                  <div><a href={`/api/invoices/${clientMeta.latest_invoice_id}/download`} className="underline mt-1 inline-block text-blue-300 hover:text-blue-100">View invoice</a></div>
-                )}
               </div>
             ) : (
-              <button className="bg-[#1E5FFF] text-white px-4 py-2 rounded-md hover:bg-blue-600 font-medium" onClick={handleAddChannel}>
+              <button 
+                className="w-full sm:w-auto bg-[#1E5FFF] text-white px-6 py-2.5 rounded-lg hover:bg-blue-600 font-bold transition-all shadow-lg shadow-blue-900/20" 
+                onClick={() => setIsAddModalOpen(true)}
+              >
                 + Add WhatsApp number
               </button>
             )}
           </div>
         </div>
+
+        {isAddModalOpen && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="bg-[#0f111a] border border-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl relative">
+              <button 
+                onClick={() => setIsAddModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              >✕</button>
+              <h2 className="text-xl font-bold text-white mb-6">Add New WhatsApp</h2>
+              <form onSubmit={handleAddChannel} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Number Label</label>
+                  <input 
+                    type="text" 
+                    required 
+                    autoFocus
+                    placeholder="e.g. Sales, Support, Main"
+                    value={newChannelLabel} 
+                    onChange={e => setNewChannelLabel(e.target.value)} 
+                    className="w-full px-4 py-3 border border-gray-700 rounded-lg bg-[#1a1d2d] text-white focus:outline-none focus:border-blue-500" 
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={loading || !newChannelLabel}
+                  className="w-full py-3 px-4 rounded-lg font-bold text-white bg-[#1E5FFF] hover:bg-blue-600 disabled:opacity-50 transition-all shadow-lg shadow-blue-900/20"
+                >
+                  {loading ? "Adding..." : "Next: Connect WhatsApp"}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
 
         {error && <div className="text-red-500 px-8">{error}</div>}
 

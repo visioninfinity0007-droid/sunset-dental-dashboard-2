@@ -109,6 +109,12 @@ function PlanPicker() {
   return (
     <div className="min-h-screen bg-[#060d1e] text-white py-16 px-4">
       <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <Link href="/onboarding/connect-whatsapp" className="text-gray-400 hover:text-white flex items-center gap-2 text-sm transition-colors">
+            &larr; Back to WhatsApp connection
+          </Link>
+        </div>
+
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-[#e8f3ff]">Choose your plan</h1>
           <p className="text-xl text-[#b0cde8] max-w-2xl mx-auto">

@@ -196,7 +196,7 @@ export async function POST(request) {
       return NextResponse.json({
         ok: true,
         slug,
-        redirectTo: `/onboarding/choose-plan?slug=${slug}`,
+        redirectTo: `/onboarding/connect-whatsapp?slug=${slug}`,
       });
     }
   } catch (error) {
