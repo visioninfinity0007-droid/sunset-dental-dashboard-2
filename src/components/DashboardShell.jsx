@@ -133,16 +133,16 @@ export default function DashboardShell({
       </aside>
 
       {/* Mobile Backdrop */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
+      <div 
+        className={`fixed inset-0 z-40 bg-black/60 lg:hidden transition-opacity duration-300 ${
+          isMobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
 
       {/* Mobile Sidebar Overlay */}
       <div 
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0a0c10] border-r border-gray-800 transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-gray-900 transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
