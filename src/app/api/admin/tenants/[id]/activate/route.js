@@ -3,7 +3,8 @@ import { provisionTenant } from "@/lib/provisioning";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-export async function POST(request, { params }) {
+export async function PATCH(request, { params }) {
+  if (cookies().get("vi_impersonating")) return NextResponse.json({ error: "Read-only mode active." }, { status: 403 });
   try {
     const { id } = params;
     const cookieStore = cookies();
@@ -42,18 +43,18 @@ export async function POST(request, { params }) {
       .from("invoices")
       .select("id")
       .eq("tenant_id", id)
-      .eq("status", "draft")
+      .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(1);
 
     if (invoices && invoices.length > 0) {
-      await supabaseAdmin.from("invoices").update({ status: "paid" }).eq("id", invoices[0].id);
+      await supabaseAdmin.from("invoices").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", invoices[0].id);
     }
 
     // 4. Update tenant status to active
     await supabaseAdmin
       .from("tenants")
-      .update({ plan_status: "active" })
+      .update({ plan_status: "active", activated_at: new Date().toISOString() })
       .eq("id", id);
 
     // 5. Audit Log

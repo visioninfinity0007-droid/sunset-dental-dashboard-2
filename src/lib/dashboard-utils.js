@@ -216,6 +216,7 @@ export function buildStats(data, filters) {
     totals: { leads: filteredLeads.length, messages: filteredMessages.length },
     sourceBreakdown,
     stageFunnel: stageMap,
+    appointments: data.appointments || [],
   };
 }
 

@@ -891,7 +891,7 @@ export default function DashboardPage({ params }) {
             <div className="leads-header flex-col sm:flex-row items-start sm:items-center gap-4">
               <h2 className="leads-title">Appointments</h2>
               <button
-                onClick={() => handleDownloadCSV(visibleLeads.filter(l => l.status === "booked" || l.appointmentTime), `appointments-${slug}`)}
+                onClick={() => handleDownloadCSV(stats?.appointments || [], `appointments-${slug}`)}
                 className="bg-[#0f111a] border border-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2 h-10"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -907,7 +907,7 @@ export default function DashboardPage({ params }) {
               </div>
             ) : (
               <div>
-                {visibleLeads.filter((l) => l.status === "booked" || l.appointmentTime).length === 0 ? (
+                {(stats?.appointments || []).length === 0 ? (
                   <div className="empty-state">
                     <div className="empty-icon">📅</div>
                     <div className="empty-title">No appointments in this range</div>
@@ -917,39 +917,38 @@ export default function DashboardPage({ params }) {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-2">
-                    {visibleLeads
-                      .filter((l) => l.status === "booked" || l.appointmentTime)
-                      .map((lead, i) => (
+                    {(stats?.appointments || [])
+                      .map((appt, i) => (
                         <div key={`appt-${i}`} className="bg-[#0f111a] border border-gray-800 rounded-xl p-5 hover:border-gray-700 transition-colors flex flex-col gap-3">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h3 className="text-white font-semibold">{lead.name}</h3>
-                              <p className="text-sm text-gray-400">{lead.phone}</p>
+                              <h3 className="text-white font-semibold">{appt.name || "Unknown"}</h3>
+                              <p className="text-sm text-gray-400">{appt.phone}</p>
                             </div>
-                            <span className={statusBadge(lead.status)}>
-                              {lead.status?.replace(/_/g, " ") || "—"}
+                            <span className={statusBadge(appt.status)}>
+                              {appt.status?.replace(/_/g, " ") || "—"}
                             </span>
                           </div>
                           
                           <div className="flex items-center gap-2 text-sm text-gray-300 mt-2">
                             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                            {lead.appointmentTime || "—"}
+                            {appt.slotHuman || (appt.slotIso ? new Date(appt.slotIso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : "—")}
                           </div>
                           
                           <div className="flex items-center gap-2 text-sm text-gray-300">
                             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                            {lead.treatmentType || "Treatment pending"}
+                            {appt.treatmentType || "Service / Inquiry pending"}
                           </div>
 
                           <div className="mt-auto pt-3 border-t border-gray-800 flex justify-between items-center">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-gray-500">Score</span>
+                              <span className="text-xs text-gray-500">Source Lead Score</span>
                               <div className="score-pill" style={{ color: "var(--stone-800)", transform: "scale(0.85)", transformOrigin: "left center", margin: 0 }}>
-                                {lead.score}
+                                {appt.sourceLeadScore || 0}
                               </div>
                             </div>
-                            <span className={`text-xs px-2 py-0.5 rounded ${lead.currentHandler === "human" ? "bg-purple-900/30 text-purple-400" : "bg-blue-900/30 text-blue-400"}`}>
-                              {lead.currentHandler === "human" ? "👤 Human" : "🤖 Bot"}
+                            <span className="text-xs px-2 py-0.5 rounded bg-blue-900/30 text-blue-400">
+                              🤖 Bot
                             </span>
                           </div>
                         </div>

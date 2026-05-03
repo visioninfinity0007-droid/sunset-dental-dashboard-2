@@ -9,6 +9,8 @@ export default function TenantsPage() {
   const [activatingId, setActivatingId] = useState(null);
   const [retryingId, setRetryingId] = useState(null);
   const [selectedTenantError, setSelectedTenantError] = useState(null);
+  const [editingTenant, setEditingTenant] = useState(null);
+  const [editForm, setEditForm] = useState({ business_name: "", plan: "", plan_status: "", suspension_grace_days: 7 });
 
   useEffect(() => {
     fetchTenants();
@@ -34,7 +36,7 @@ export default function TenantsPage() {
     setActivatingId(id);
     try {
       const res = await fetch(`/api/admin/tenants/${id}/activate`, {
-        method: "POST",
+        method: "PATCH",
       });
       const data = await res.json();
       if (res.ok) {
@@ -61,6 +63,50 @@ export default function TenantsPage() {
     } catch (err) {
       alert("Error impersonating");
     }
+  };
+
+  const handleDelete = async (id, slug) => {
+    const confirmation = prompt(`Are you sure you want to delete this tenant and ALL its data? Type the exact slug "${slug}" to confirm.`);
+    if (confirmation !== slug) {
+      alert("Deletion cancelled or slug did not match.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/tenants/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        alert("Tenant deleted successfully.");
+        fetchTenants();
+      } else {
+        alert("Failed to delete tenant");
+      }
+    } catch (err) {
+      alert("Error deleting tenant");
+    }
+  };
+
+  const submitEdit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`/api/admin/tenants/${editingTenant.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) {
+        alert("Tenant updated successfully.");
+        setEditingTenant(null);
+        fetchTenants();
+      } else {
+        alert("Failed to update tenant");
+      }
+    } catch (err) {
+      alert("Error updating tenant");
+    }
+  };
+
+  const openEdit = (t) => {
+    setEditingTenant(t);
+    setEditForm({ business_name: t.business_name, plan: t.plan || "", plan_status: t.plan_status, suspension_grace_days: t.suspension_grace_days || 7 });
   };
 
   const handleRetryProvisioning = async (id) => {
@@ -183,6 +229,18 @@ export default function TenantsPage() {
                         >
                           Impersonate
                         </button>
+                        <button 
+                          onClick={() => openEdit(t)}
+                          className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(t.id, t.slug)}
+                          className="bg-red-900/50 hover:bg-red-800/80 text-red-300 px-3 py-1 rounded text-xs font-medium transition-colors"
+                        >
+                          Delete
+                        </button>
                         <Link 
                           href={`/admin/tenants/${t.id}`}
                           className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
@@ -233,6 +291,73 @@ export default function TenantsPage() {
                 {retryingId === selectedTenantError.id ? "Retrying..." : "Retry Now"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {editingTenant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-[#161b22] border border-gray-700 rounded-xl max-w-lg w-full p-6 m-4 shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-4">Edit Tenant: {editingTenant.business_name}</h3>
+            <form onSubmit={submitEdit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Business Name</label>
+                <input 
+                  type="text" 
+                  value={editForm.business_name} 
+                  onChange={e => setEditForm({ ...editForm, business_name: e.target.value })}
+                  className="w-full px-4 py-2 bg-[#0f111a] border border-gray-700 rounded text-white focus:outline-none focus:border-[#1E5FFF]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Plan</label>
+                <input 
+                  type="text" 
+                  value={editForm.plan} 
+                  onChange={e => setEditForm({ ...editForm, plan: e.target.value })}
+                  className="w-full px-4 py-2 bg-[#0f111a] border border-gray-700 rounded text-white focus:outline-none focus:border-[#1E5FFF]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Plan Status</label>
+                <select 
+                  value={editForm.plan_status} 
+                  onChange={e => setEditForm({ ...editForm, plan_status: e.target.value })}
+                  className="w-full px-4 py-2 bg-[#0f111a] border border-gray-700 rounded text-white focus:outline-none focus:border-[#1E5FFF]"
+                >
+                  <option value="unconfigured">Unconfigured</option>
+                  <option value="pending_payment">Pending Payment</option>
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Suspension Grace Days</label>
+                <input 
+                  type="number" 
+                  value={editForm.suspension_grace_days} 
+                  onChange={e => setEditForm({ ...editForm, suspension_grace_days: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-2 bg-[#0f111a] border border-gray-700 rounded text-white focus:outline-none focus:border-[#1E5FFF]"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setEditingTenant(null)}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 bg-[#1E5FFF] hover:bg-blue-600 text-white rounded text-sm transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

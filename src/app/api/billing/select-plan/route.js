@@ -81,7 +81,6 @@ export async function POST(request) {
 
     // Bill From
     const bizName = process.env.INVOICE_BUSINESS_NAME || "Vision Infinity";
-    const bizAddress = process.env.INVOICE_BUSINESS_ADDRESS || "(not provided)";
     const bizNTN = process.env.INVOICE_BUSINESS_NTN || "(not provided)";
     const bizSTRN = process.env.INVOICE_BUSINESS_STRN || "(not provided)";
     const bizEmail = process.env.INVOICE_BUSINESS_EMAIL || "(not provided)";
@@ -89,11 +88,10 @@ export async function POST(request) {
 
     page.drawText("Bill From:", { x: 50, y: height - 150, size: 12, font: boldFont });
     page.drawText(bizName, { x: 50, y: height - 170, size: 10, font });
-    page.drawText(`Address: ${bizAddress}`, { x: 50, y: height - 185, size: 10, font });
-    page.drawText(`NTN: ${bizNTN}`, { x: 50, y: height - 200, size: 10, font });
-    page.drawText(`STRN: ${bizSTRN}`, { x: 50, y: height - 215, size: 10, font });
-    page.drawText(`Email: ${bizEmail}`, { x: 50, y: height - 230, size: 10, font });
-    page.drawText(`WhatsApp: ${bizWhatsApp}`, { x: 50, y: height - 245, size: 10, font });
+    page.drawText(`NTN: ${bizNTN}`, { x: 50, y: height - 185, size: 10, font });
+    page.drawText(`STRN: ${bizSTRN}`, { x: 50, y: height - 200, size: 10, font });
+    page.drawText(`Email: ${bizEmail}`, { x: 50, y: height - 215, size: 10, font });
+    page.drawText(`WhatsApp: ${bizWhatsApp}`, { x: 50, y: height - 230, size: 10, font });
 
     // Bill To
     page.drawText("Bill To:", { x: 300, y: height - 150, size: 12, font: boldFont });
