@@ -191,23 +191,19 @@ export default function DashboardShell({
         </div>
       </div>
 
-      <main className="main-content flex flex-col h-screen overflow-hidden">
-        {/* Mobile Header Bar */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-800 bg-[#0f111a] flex-shrink-0">
-          <div className="font-bold text-white flex items-center gap-2">
-            <span className="text-xl">{clientLogo}</span>
-            <span className="truncate">{clientName}</span>
-          </div>
-          <button 
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {children}
-        </div>
+      {/* Mobile Fixed Top Header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-4">
+        <span className="text-white font-semibold text-sm truncate">{clientName}</span>
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      </header>
+
+      <main className="main-content pt-14 lg:pt-0">
+        {children}
       </main>
     </div>
   );
