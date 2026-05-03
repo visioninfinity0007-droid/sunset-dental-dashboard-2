@@ -35,6 +35,7 @@ function SignupForm() {
     setLoading(true);
 
     try {
+      const payload = {
         fullName: formData.fullName,
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
