@@ -225,7 +225,7 @@ input, select { font-family: inherit; }
   display: none; /* shown only on mobile via media query */
   position: sticky;
   top: var(--vi-header-h);
-  z-index: 100;
+  z-index: 10;
   background: #060d1e;
   border-bottom: 1px solid var(--stone-100);
   padding: 0 8px;
