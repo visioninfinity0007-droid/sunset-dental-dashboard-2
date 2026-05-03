@@ -21,6 +21,7 @@ export default function AdminSidebar({ userEmail }) {
     { id: "health", icon: "🏥", label: "System Health", path: "/admin/health" },
     { id: "analytics", icon: "📈", label: "Analytics", path: "/admin/analytics" },
     { id: "bot-logs", icon: "🤖", label: "Bot Logs", path: "/admin/bot-logs" },
+    { id: "support", icon: "🎫", label: "Support Tickets", path: "/admin/support" },
   ];
 
   return (

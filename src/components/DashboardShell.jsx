@@ -116,6 +116,11 @@ export default function DashboardShell({
           </span>
           {renderNavItem("analytics", "📈", "Analytics", null, `/dashboard/${slug}/analytics`)}
           {renderNavItem("bot-activity", "📊", "Bot Activity", null, `/dashboard/${slug}/bot-activity`)}
+          
+          <span className="nav-section-label" style={{ marginTop: 16 }}>
+            Help
+          </span>
+          {renderNavItem("support", "🎫", "Support", null, `/dashboard/${slug}/support`)}
         </nav>
 
         <div className="sidebar-footer">
@@ -182,6 +187,11 @@ export default function DashboardShell({
           </span>
           {renderNavItem("analytics", "📈", "Analytics", null, `/dashboard/${slug}/analytics`)}
           {renderNavItem("bot-activity", "📊", "Bot Activity", null, `/dashboard/${slug}/bot-activity`)}
+
+          <span className="nav-section-label" style={{ marginTop: 16 }}>
+            Help
+          </span>
+          {renderNavItem("support", "🎫", "Support", null, `/dashboard/${slug}/support`)}
         </nav>
 
         <div className="sidebar-footer">
