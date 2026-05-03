@@ -27,7 +27,7 @@ export async function GET(request, { params }) {
     // Fetch leads ordered by last_contact
     const { data: leads, error: leadsErr } = await supabase
       .from('leads')
-      .select('id, phone, name, status, intent, current_handler, last_contact, last_message_preview, unread_count, updated_at')
+      .select('id, phone, name, status, intent_level, current_handler, last_contact, last_message, updated_at')
       .eq('tenant_id', tenant.id)
       .order('last_contact', { ascending: false, nullsFirst: false });
 
