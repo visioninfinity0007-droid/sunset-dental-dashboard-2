@@ -1,59 +1,62 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createServiceRoleClient } from "@/lib/supabaseServer";
+import { createClient, createServiceRoleClient } from "@/lib/supabaseServer";
 
 export async function POST(request, { params }) {
   const { id } = params;
-  
+
   if (cookies().get("vi_impersonating")) {
     return NextResponse.json({ error: "Read-only mode active." }, { status: 403 });
   }
 
   const cookieStore = cookies();
-  const supabase = createServiceRoleClient();
+  const supabase = createClient(cookieStore);
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
-
-    // Check super admin
-    const { data: sa, error: saErr } = await supabase
-      .from('super_admins')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (saErr || !sa) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const { data: sa } = await supabase
+      .from('super_admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!sa) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const supabaseAdmin = createServiceRoleClient();
 
     const body = await request.json();
-    const graceDays = parseInt(body.grace_days, 10);
-
-    if (isNaN(graceDays) || graceDays < 0) {
-      return NextResponse.json({ error: "Invalid grace days" }, { status: 400 });
+    const grace = Number(body.grace_days);
+    if (!Number.isInteger(grace) || grace < 0 || grace > 90) {
+      return NextResponse.json({ error: "grace_days must be an integer between 0 and 90" }, { status: 400 });
     }
 
-    const { error: updateErr } = await supabase
+    const { error: updateErr } = await supabaseAdmin
       .from('tenants')
-      .update({ suspension_grace_days: graceDays })
+      .update({ suspension_grace_days: grace })
       .eq('id', id);
 
-    if (updateErr) throw updateErr;
+    if (updateErr) {
+      return NextResponse.json({ error: "Update failed", details: updateErr.message }, { status: 500 });
+    }
 
-    // Log action
-    await supabase.from('audit_log').insert({
+    await supabaseAdmin.from('audit_log').insert({
       actor_user_id: user.id,
       actor_email: user.email,
       action: 'configure_grace_period',
       target_type: 'tenant',
       target_id: id,
-      metadata: { grace_days: graceDays }
+      metadata: { suspension_grace_days: grace },
     });
 
-    return NextResponse.json({ success: true, grace_days: graceDays });
+    return NextResponse.json({ ok: true, suspension_grace_days: grace });
   } catch (err) {
-    console.error("Configure Grace error:", err);
-    return NextResponse.json({ error: "Failed to configure grace period" }, { status: 500 });
+    console.error("Configure grace error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

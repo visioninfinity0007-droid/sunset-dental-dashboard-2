@@ -1,7 +1,25 @@
-import { createServiceRoleClient } from "@/lib/supabaseServer";
+import { createServiceRoleClient, createClient } from "@/lib/supabaseServer";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export async function GET() {
+  const cookieStore = cookies();
+  const supabaseSession = createClient(cookieStore);
+
+  const { data: { user }, error: authError } = await supabaseSession.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: sa } = await supabaseSession
+    .from('super_admins')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!sa) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const healthData = {
     supabase: { status: "unknown", latencyMs: 0, details: null },
     evolution: { status: "unknown", latencyMs: 0, details: null },
