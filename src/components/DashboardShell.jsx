@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X } from "lucide-react";
 
 export default function DashboardShell({ 
   children, 
@@ -17,6 +17,13 @@ export default function DashboardShell({
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Listen for hamburger button click fired from the universal Header
+  useEffect(() => {
+    const handler = () => setIsMobileMenuOpen(true);
+    window.addEventListener("vi:open-mobile-nav", handler);
+    return () => window.removeEventListener("vi:open-mobile-nav", handler);
+  }, []);
 
   const handleLogout = async () => {
     await fetch("/api/auth", { method: "DELETE" });
@@ -192,17 +199,8 @@ export default function DashboardShell({
       </div>
 
       {/* Mobile Fixed Top Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-4">
-        <span className="text-white font-semibold text-sm truncate">{clientName}</span>
-        <button
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-      </header>
 
-      <main className="main-content pt-14 lg:pt-0">
+      <main className="main-content">
         {children}
       </main>
     </div>

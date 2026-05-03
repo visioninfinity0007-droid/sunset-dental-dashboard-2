@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { Menu } from "lucide-react";
 
 import Logo from "./Logo";
 import { createBrowserClient } from "@supabase/ssr";
@@ -38,9 +39,18 @@ export default function Header({ clientName }) {
 
         <div className="vi-header-right">
           {isDashboard && (
-            <button className="vi-header-logout" onClick={handleLogout}>
-              Sign out ↗
-            </button>
+            <>
+              <button
+                className="lg:hidden flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 transition-colors mr-1"
+                onClick={() => window.dispatchEvent(new CustomEvent("vi:open-mobile-nav"))}
+                aria-label="Open navigation"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <button className="vi-header-logout" onClick={handleLogout}>
+                Sign out ↗
+              </button>
+            </>
           )}
         </div>
 
