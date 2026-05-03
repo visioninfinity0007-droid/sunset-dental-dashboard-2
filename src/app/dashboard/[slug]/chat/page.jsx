@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { ArrowLeft } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
 
 export default function ChatPage({ params }) {
@@ -166,9 +167,9 @@ export default function ChatPage({ params }) {
 
   return (
     <DashboardShell slug={slug} activeTab="chat" userEmail="" clientMeta={{}}>
-      <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+      <div className="flex h-[calc(100vh-64px)] overflow-hidden flex-col lg:flex-row">
         {/* Left Sidebar - Leads List */}
-        <div className="w-1/3 min-w-[300px] border-r border-gray-800 bg-[#0a0c14] flex flex-col">
+        <div className={`w-full lg:w-1/3 lg:min-w-[300px] border-r border-gray-800 bg-[#0a0c14] flex flex-col ${selectedLead ? 'hidden lg:flex' : 'flex'}`}>
           <div className="p-4 border-b border-gray-800">
             <h2 className="text-lg font-bold text-white">Live Chat</h2>
           </div>
@@ -219,14 +220,19 @@ export default function ChatPage({ params }) {
         </div>
 
         {/* Right Panel - Chat Area */}
-        <div className="flex-1 bg-[#0f111a] flex flex-col relative">
+        <div className={`flex-1 bg-[#0f111a] flex flex-col relative ${!selectedLead ? 'hidden lg:flex' : 'flex'}`}>
           {selectedLead ? (
             <>
               {/* Chat Header */}
               <div className="p-4 border-b border-gray-800 bg-[#161a29] flex justify-between items-center">
-                <div>
-                  <h3 className="font-bold text-white">{selectedLead.name || selectedLead.phone}</h3>
-                  <p className="text-xs text-gray-400">{selectedLead.phone}</p>
+                <div className="flex items-center gap-3">
+                  <button className="lg:hidden text-gray-400 hover:text-white" onClick={() => setSelectedLead(null)}>
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <div>
+                    <h3 className="font-bold text-white">{selectedLead.name || selectedLead.phone}</h3>
+                    <p className="text-xs text-gray-400">{selectedLead.phone}</p>
+                  </div>
                 </div>
                 <div>
                   <button 

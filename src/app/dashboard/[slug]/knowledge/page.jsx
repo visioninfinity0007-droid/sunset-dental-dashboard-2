@@ -128,7 +128,7 @@ export default function KnowledgePage({ params }) {
             <h1 className="page-title capitalize">{activeTab.replace("docs", "documents")}</h1>
             <p className="page-subtitle">Train your AI assistant with custom knowledge.</p>
           </div>
-          <div className="header-actions">
+          <div className="header-actions !flex">
             {activeTab === "flows" && (
               <button className="bg-[#1E5FFF] text-white px-4 py-2 rounded-md hover:bg-blue-600" onClick={() => { setModalType("flow"); setModalOpen(true); }}>+ Add Flow</button>
             )}
@@ -147,8 +147,8 @@ export default function KnowledgePage({ params }) {
           </div>
         </div>
 
-        <div className="px-8 border-b border-gray-800 mb-6">
-          <nav className="-mb-px flex space-x-8">
+        <div className="px-8 border-b border-gray-800 mb-6 overflow-x-auto scrollbar-hide">
+          <nav className="-mb-px flex space-x-8 min-w-max">
             <button className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'flows' ? 'border-[#1E5FFF] text-[#1E5FFF]' : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-300'}`} onClick={() => setActiveTab("flows")}>Chat Flows</button>
             <button className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'faqs' ? 'border-[#1E5FFF] text-[#1E5FFF]' : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-300'}`} onClick={() => setActiveTab("faqs")}>FAQs</button>
             <button className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'docs' ? 'border-[#1E5FFF] text-[#1E5FFF]' : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-300'}`} onClick={() => setActiveTab("docs")}>Documents</button>
@@ -158,7 +158,7 @@ export default function KnowledgePage({ params }) {
 
         <div className="px-8 pb-10">
           <div className="bg-[#0f111a] border border-gray-800 rounded-xl overflow-hidden mb-10">
-            <table className="w-full text-left text-sm text-gray-400">
+            <table className="w-full text-left text-sm text-gray-400 hidden sm:table">
               <thead className="bg-[#161a29] text-gray-300">
                 <tr>
                   <th className="px-6 py-4 font-medium">Label</th>
@@ -185,6 +185,29 @@ export default function KnowledgePage({ params }) {
                 ))}
               </tbody>
             </table>
+
+            {/* Mobile Card Layout */}
+            <div className="sm:hidden divide-y divide-gray-800">
+              {loading ? (
+                <div className="p-6 text-center text-gray-500 text-sm">Loading...</div>
+              ) : filteredSources.length === 0 ? (
+                <div className="p-6 text-center text-gray-500 text-sm">No data found</div>
+              ) : filteredSources.map(s => (
+                <div key={s.id} className="p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="text-white font-medium break-all mr-2">{s.label}</div>
+                    {renderStatus(s.status, s.error_message)}
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Added: {new Date(s.created_at).toLocaleDateString()}</span>
+                    <div className="flex gap-4">
+                      {s.status === 'failed' && <button className="text-[#1E5FFF] font-semibold">Retry</button>}
+                      <button className="text-red-400 font-semibold">Delete</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
