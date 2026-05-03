@@ -1,0 +1,519 @@
+{
+  "name": "VI Shared Bot Flow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vi-shared-bot",
+        "options": {}
+      },
+      "id": "node-1-webhook",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 0, 0 ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "evolution_instance_name", "value": "={{$json.body?.instance || $json.instance}}" },
+            { "name": "phone", "value": "={{($json.body?.data?.key?.remoteJid || $json.data?.key?.remoteJid || '').split('@')[0]}}" },
+            { "name": "message_body", "value": "={{$json.body?.data?.message?.conversation || $json.body?.data?.message?.extendedTextMessage?.text || $json.data?.message?.conversation || $json.data?.message?.extendedTextMessage?.text || ''}}" },
+            { "name": "message_id", "value": "={{$json.body?.data?.key?.id || $json.data?.key?.id}}" },
+            { "name": "pushName", "value": "={{$json.body?.data?.pushName || $json.data?.pushName}}" }
+          ],
+          "boolean": [
+            { "name": "is_from_me", "value": "={{$json.body?.data?.key?.fromMe || $json.data?.key?.fromMe}}" }
+          ],
+          "number": [
+            { "name": "message_timestamp", "value": "={{$json.body?.data?.messageTimestamp || $json.data?.messageTimestamp}}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-2-extract",
+      "name": "Extract Event",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [ 200, 0 ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.is_from_me}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-is-from-me",
+      "name": "Check From Me",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 400, 0 ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/whatsapp_instances?select=id,tenant_id,tenants(id,slug,plan_status,bot_config,business_name,bot_default_language)&evolution_instance_name=eq.{{$json.evolution_instance_name}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-3-resolve-tenant",
+      "name": "Resolve Tenant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 600, 200 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/bot_execution_log",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "tenant_id", "value": "={{$json[0].tenant_id}}" },
+            { "name": "instance_id", "value": "={{$json[0].id}}" },
+            { "name": "phone", "value": "={{$('Extract Event').item.json.phone}}" },
+            { "name": "step", "value": "webhook_received" },
+            { "name": "status", "value": "success" },
+            { "name": "details", "value": "={ \"message_id\": \"{{$('Extract Event').item.json.message_id}}\" }" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-4-log-webhook",
+      "name": "Log Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 800, 200 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "tenant_id", "value": "={{$('Resolve Tenant').item.json[0].tenant_id}}" },
+            { "name": "instance_id", "value": "={{$('Resolve Tenant').item.json[0].id}}" },
+            { "name": "phone", "value": "={{$('Extract Event').item.json.phone}}" },
+            { "name": "body", "value": "={{$('Extract Event').item.json.message_body}}" },
+            { "name": "sender", "value": "user" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-5-persist-inbound",
+      "name": "Persist Inbound Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 1000, 200 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/leads?on_conflict=tenant_id,phone",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "tenant_id", "value": "={{$('Resolve Tenant').item.json[0].tenant_id}}" },
+            { "name": "phone", "value": "={{$('Extract Event').item.json.phone}}" },
+            { "name": "name", "value": "={{$('Extract Event').item.json.pushName || 'Unknown'}}" },
+            { "name": "status", "value": "new" },
+            { "name": "current_handler", "value": "bot" },
+            { "name": "last_message", "value": "={{$('Extract Event').item.json.message_body}}" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-6-upsert-lead",
+      "name": "Upsert Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 1200, 200 ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/leads?tenant_id=eq.{{$('Resolve Tenant').item.json[0].tenant_id}}&phone=eq.{{$('Extract Event').item.json.phone}}&select=current_handler",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-7-human-gate-check",
+      "name": "Human Gate Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 1400, 200 ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[0].current_handler}}",
+              "value2": "human"
+            }
+          ]
+        }
+      },
+      "id": "node-7b-human-gate-if",
+      "name": "If Human Gate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 1600, 200 ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$('Resolve Tenant').item.json[0].tenants.plan_status}}",
+              "value2": "active"
+            }
+          ]
+        }
+      },
+      "id": "node-8-plan-status-if",
+      "name": "Check Plan Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 1800, 400 ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$('Extract Event').item.json.message_body.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "agent"
+            },
+            {
+              "value1": "={{$('Extract Event').item.json.message_body.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "human"
+            },
+            {
+              "value1": "={{$('Extract Event').item.json.message_body.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "insaan"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "node-9-escalation-detect",
+      "name": "Detect Escalation Keywords",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 2000, 600 ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/knowledge_sources?tenant_id=eq.{{$('Resolve Tenant').item.json[0].tenant_id}}&status=eq.ready",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-10-load-config",
+      "name": "Load Bot Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 2200, 800 ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const tenant = $('Resolve Tenant').item.json[0].tenants;\nconst config = tenant.bot_config || {};\nconst name = config.name || 'Assistant';\nconst tone = config.tone || 'professional';\nconst style = config.style || 'concise';\nconst businessName = tenant.business_name || '';\nconst msg = $('Extract Event').item.json.message_body;\n\nconst ks = $input.all()[0].json;\nlet ksText = '';\nif (ks && ks.length > 0) {\n  ks.forEach(k => ksText += `- ${k.label}: ${k.content}\\n`);\n}\n\nreturn [{\n  json: {\n    systemPrompt: `You are ${name}, a helpful WhatsApp assistant for ${businessName}. Tone: ${tone}. Style: ${style}. You can answer ONLY based on the FAQs below.\\n\\nFAQs:\\n${ksText}\\n\\nRules: Keep under 100 words. Never invent info.`,\n    userPrompt: msg\n  }\n}];"
+      },
+      "id": "node-11-build-prompt",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 2400, 800 ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$env.LLM_PROVIDER}}",
+              "value2": "openai"
+            }
+          ]
+        }
+      },
+      "id": "node-12-llm-branch",
+      "name": "LLM Provider Branch",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 2600, 800 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.OLLAMA_URL}}/api/chat",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "model", "value": "qwen2.5:7b" },
+            { "name": "messages", "value": "=[{\"role\":\"system\",\"content\": \"{{$json.systemPrompt}}\"},{\"role\":\"user\",\"content\": \"{{$json.userPrompt}}\"}]" },
+            { "name": "stream", "value": false }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "node-12b-ollama",
+      "name": "Call Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 2800, 1000 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.EVOLUTION_API_URL}}/message/sendText/{{$('Resolve Tenant').item.json[0].evolution_instance_name}}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{$('Extract Event').item.json.phone}}" },
+            { "name": "text", "value": "={{$json.message.content}}" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{$env.EVOLUTION_API_KEY}}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-16-send-response",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 3000, 1000 ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Event": {
+      "main": [
+        [
+          {
+            "node": "Check From Me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check From Me": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Resolve Tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Tenant": {
+      "main": [
+        [
+          {
+            "node": "Log Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Webhook": {
+      "main": [
+        [
+          {
+            "node": "Persist Inbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Inbound Message": {
+      "main": [
+        [
+          {
+            "node": "Upsert Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Lead": {
+      "main": [
+        [
+          {
+            "node": "Human Gate Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Gate Check": {
+      "main": [
+        [
+          {
+            "node": "If Human Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Human Gate": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check Plan Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Plan Status": {
+      "main": [
+        [
+          {
+            "node": "Detect Escalation Keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Escalation Keywords": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Load Bot Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Bot Config": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "LLM Provider Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Provider Branch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Call Ollama",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Ollama": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

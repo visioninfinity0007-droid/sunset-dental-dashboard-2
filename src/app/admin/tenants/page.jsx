@@ -7,6 +7,8 @@ export default function TenantsPage() {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activatingId, setActivatingId] = useState(null);
+  const [retryingId, setRetryingId] = useState(null);
+  const [selectedTenantError, setSelectedTenantError] = useState(null);
 
   useEffect(() => {
     fetchTenants();
@@ -61,6 +63,26 @@ export default function TenantsPage() {
     }
   };
 
+  const handleRetryProvisioning = async (id) => {
+    setRetryingId(id);
+    try {
+      const res = await fetch(`/api/admin/tenants/${id}/retry-provisioning`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        alert("Provisioning succeeded!");
+        setSelectedTenantError(null);
+        fetchTenants();
+      } else {
+        alert(data.error || "Provisioning failed again.");
+        fetchTenants();
+      }
+    } catch (err) {
+      alert("Error retrying provisioning.");
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="page-header">
@@ -78,6 +100,7 @@ export default function TenantsPage() {
                 <th className="px-6 py-4">Business</th>
                 <th className="px-6 py-4">Plan</th>
                 <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Bot Status</th>
                 <th className="px-6 py-4">Created</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -89,7 +112,7 @@ export default function TenantsPage() {
                 </tr>
               ) : tenants.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center">No tenants found.</td>
+                  <td colSpan="6" className="px-6 py-8 text-center">No tenants found.</td>
                 </tr>
               ) : (
                 tenants.map(t => (
@@ -110,6 +133,27 @@ export default function TenantsPage() {
                       }`}>
                         {t.plan_status}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {t.provisioning_status === 'failed' ? (
+                        <button 
+                          onClick={() => setSelectedTenantError(t)}
+                          className="flex items-center gap-1.5 px-2 py-1 bg-red-900/50 text-red-300 rounded text-xs font-medium hover:bg-red-900/80 transition-colors"
+                        >
+                          <span className="h-2 w-2 rounded-full bg-red-400"></span>
+                          Failed
+                        </button>
+                      ) : (t.provisioning_status === 'completed' || t.provisioning_status === 'manual') ? (
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-green-900/50 text-green-300 rounded text-xs font-medium w-max">
+                          <span className="h-2 w-2 rounded-full bg-green-400"></span>
+                          Ready
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-900/50 text-yellow-300 rounded text-xs font-medium w-max">
+                          <span className="h-2 w-2 rounded-full bg-yellow-400"></span>
+                          {t.provisioning_status === 'in_progress' ? 'In Progress' : 'Pending'}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       {new Date(t.created_at).toLocaleDateString()}
@@ -154,6 +198,44 @@ export default function TenantsPage() {
           </table>
         </div>
       </div>
+
+      {selectedTenantError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-[#161b22] border border-gray-700 rounded-xl max-w-lg w-full p-6 m-4 shadow-xl">
+            <h3 className="text-xl font-bold text-red-400 mb-2">Bot Provisioning Failed</h3>
+            <p className="text-gray-300 mb-4 text-sm">
+              The automated setup for <strong>{selectedTenantError.business_name}</strong> encountered an error. 
+              Manual fix is required.
+            </p>
+            
+            <div className="bg-black/50 p-4 rounded border border-gray-800 mb-6 font-mono text-sm text-red-300 overflow-x-auto whitespace-pre-wrap">
+              {selectedTenantError.provisioning_last_error || "Unknown error occurred during setup."}
+            </div>
+            
+            <div className="flex justify-between items-center text-xs text-gray-500 mb-6">
+              <span>Attempts: {selectedTenantError.provisioning_attempts} / 3</span>
+              <span>Last try: {new Date(selectedTenantError.provisioning_last_attempt_at).toLocaleString()}</span>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setSelectedTenantError(null)}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm transition-colors"
+                disabled={retryingId === selectedTenantError.id}
+              >
+                Close
+              </button>
+              <button 
+                onClick={() => handleRetryProvisioning(selectedTenantError.id)}
+                disabled={retryingId === selectedTenantError.id}
+                className="px-4 py-2 bg-[#1E5FFF] hover:bg-blue-600 text-white rounded text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {retryingId === selectedTenantError.id ? "Retrying..." : "Retry Now"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

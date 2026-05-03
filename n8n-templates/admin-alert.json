@@ -1,0 +1,44 @@
+{
+  "name": "VI Admin Alert Flow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-alert",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 0, 0 ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "system@visioninfinity.co",
+        "toEmail": "={{$env.ADMIN_NOTIFICATION_EMAIL}}",
+        "subject": "=🚨 Vision Infinity: Provisioning failed for {{$json.body.business_name}}",
+        "text": "=Tenant ID: {{$json.body.tenant_id}}\nBusiness: {{$json.body.business_name}}\nError: {{$json.body.error_message}}\n\nPlease check the admin dashboard to retry manually.",
+        "options": {}
+      },
+      "id": "email",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [ 200, 0 ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

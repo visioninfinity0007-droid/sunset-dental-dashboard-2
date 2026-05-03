@@ -103,6 +103,7 @@ export default function DashboardShell({
             Reports
           </span>
           {renderNavItem("analytics", "📈", "Analytics", null, `/dashboard/${slug}/analytics`)}
+          {renderNavItem("bot-activity", "📊", "Bot Activity", null, `/dashboard/${slug}/bot-activity`)}
         </nav>
 
         <div className="sidebar-footer">

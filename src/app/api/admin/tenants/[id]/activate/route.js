@@ -1,4 +1,5 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabaseServer";
+import { provisionTenant } from "@/lib/provisioning";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -33,61 +34,8 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Tenant is already active" }, { status: 400 });
     }
 
-    // 1. Provision Evolution API
-    const slug = tenant.slug;
-    const randomShortId = Math.random().toString(16).substring(2, 8);
-    const instanceName = `vi_${slug.replace(/-/g, "")}_${randomShortId}`;
-    const webhookBase = process.env.N8N_WEBHOOK_BASE;
-    const evolutionUrl = process.env.EVOLUTION_API_URL;
-    const apiKey = process.env.EVOLUTION_API_KEY;
-
-    let evoToken = null;
-
-    if (evolutionUrl && apiKey && webhookBase) {
-      try {
-        const evoRes = await fetch(`${evolutionUrl}/instance/create`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: apiKey,
-          },
-          body: JSON.stringify({
-            instanceName,
-            qrcode: true,
-            integration: "WHATSAPP-BAILEYS",
-            webhook: {
-              url: `${webhookBase}/${instanceName}`,
-              events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE", "QRCODE_UPDATED"],
-              webhook_by_events: false,
-              webhook_base64: false,
-            },
-          }),
-        });
-
-        if (!evoRes.ok) {
-          throw new Error(`Evolution API error: ${evoRes.statusText}`);
-        }
-        const evoData = await evoRes.json();
-        evoToken = evoData.hash?.apikey || evoData.instance?.token || "";
-      } catch (err) {
-        console.error("Evolution provisioning failed during activation:", err);
-        return NextResponse.json({ error: "Failed to provision Evolution API." }, { status: 500 });
-      }
-    } else {
-      console.warn("Skipping Evolution API provisioning because env vars are missing.");
-    }
-
-    // 2. Insert WhatsApp Instance
-    if (evoToken) {
-      await supabaseAdmin.from("whatsapp_instances").insert({
-        tenant_id: id,
-        label: "Primary Number",
-        evolution_instance_name: instanceName,
-        evolution_instance_token: evoToken,
-        is_primary: true,
-        evolution_status: "pending",
-      });
-    }
+    // 1 & 2. Provisioning is now handled asynchronously / best-effort after activation.
+    // We will call it at the end of this function.
 
     // 3. Mark invoice as paid
     const { data: invoices } = await supabaseAdmin
@@ -119,7 +67,12 @@ export async function POST(request, { params }) {
       ip_address: ip
     });
 
-    return NextResponse.json({ ok: true });
+    // 6. Call provisionTenant
+    // The activate route NEVER throws on provisioning failure. Activation always succeeds.
+    // Provisioning is best-effort with retry handled by cron.
+    const provisionResult = await provisionTenant(id);
+
+    return NextResponse.json({ ok: true, provisioning: provisionResult });
   } catch (error) {
     console.error("Admin activation error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
